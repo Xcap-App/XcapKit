@@ -262,22 +262,6 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         }
     }
     
-    private func setupNotification() {
-        #if os(macOS)
-        let center = NotificationCenter.default
-        
-        center.addObserver(self,
-                           selector: #selector(self.frameDidChange(_:)),
-                           name: NSView.frameDidChangeNotification,
-                           object: self)
-        
-        center.addObserver(self,
-                           selector: #selector(self.windowDidResignKey(_:)),
-                           name: NSWindow.didResignKeyNotification,
-                           object: nil)
-        #endif
-    }
-    
     #if os(macOS)
     open override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -330,6 +314,24 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         }
         
         updateContentInfo()
+    }
+    
+    // MARK: - Notification
+    
+    private func setupNotification() {
+        #if os(macOS)
+        let center = NotificationCenter.default
+        
+        center.addObserver(self,
+                           selector: #selector(self.frameDidChange(_:)),
+                           name: NSView.frameDidChangeNotification,
+                           object: self)
+        
+        center.addObserver(self,
+                           selector: #selector(self.windowDidResignKey(_:)),
+                           name: NSWindow.didResignKeyNotification,
+                           object: nil)
+        #endif
     }
     
     #if os(macOS)
