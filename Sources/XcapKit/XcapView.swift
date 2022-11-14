@@ -23,9 +23,9 @@ public protocol XcapViewDelegate: AnyObject {
     func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer])
     func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer])
     // ----- Edit -----
-    func xcapView(_ xcapView: XcapView, didEditObject object: ObjectRenderer, position: ObjectLayout.Position)
-    // ----- Drag -----
-    func xcapView(_ xcapView: XcapView, didDragObjects objects: [ObjectRenderer])
+    func xcapView(_ xcapView: XcapView, didEditObject object: ObjectRenderer, at position: ObjectLayout.Position)
+    // ----- Move -----
+    func xcapView(_ xcapView: XcapView, didMoveObjects objects: [ObjectRenderer])
     // ----- Menu (macOS) -----
     #if os(macOS)
     func xcapView(_ xcapView: XcapView, menuForObject object: ObjectRenderer?) -> NSMenu?
@@ -42,9 +42,9 @@ extension XcapViewDelegate {
     public func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer]) {}
     public func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer]) {}
     // ----- Edit -----
-    public func xcapView(_ xcapView: XcapView, didEditObject object: ObjectRenderer, position: ObjectLayout.Position) {}
-    // ----- Drag -----
-    public func xcapView(_ xcapView: XcapView, didDragObjects objects: [ObjectRenderer]) {}
+    public func xcapView(_ xcapView: XcapView, didEditObject object: ObjectRenderer, at position: ObjectLayout.Position) {}
+    // ----- Move -----
+    public func xcapView(_ xcapView: XcapView, didMoveObjects objects: [ObjectRenderer]) {}
     // ----- Menu (macOS) -----
     #if os(macOS)
     public func xcapView(_ xcapView: XcapView, menuForObject object: ObjectRenderer?) -> NSMenu? { nil }
@@ -58,7 +58,7 @@ extension XcapView {
     private enum DrawingSessionState {
         case idle
         case pressing
-        case dragging
+        case moving
         /// macOS Only
         case tracking
     }
@@ -66,12 +66,13 @@ extension XcapView {
     private enum InternalState {
         case idle
         
-        case onObject(object: ObjectRenderer, alreadySelected: Bool, initialLocation: CGPoint)
+        case selecting(initialSelection: [ObjectRenderer], originalRect: CGRect, convertedRect: CGRect)
+        
         case onItem(object: ObjectRenderer, position: ObjectLayout.Position, initialLocation: CGPoint)
+        case onObject(object: ObjectRenderer, alreadySelected: Bool, initialLocation: CGPoint)
         
         case editing(object: ObjectRenderer, position: ObjectLayout.Position, initialLocation: CGPoint, lastLocation: CGPoint)
-        case dragging(object: ObjectRenderer, initialLocation: CGPoint, lastLocation: CGPoint)
-        case selecting(initialSelection: [ObjectRenderer], originalRect: CGRect, convertedRect: CGRect)
+        case moving(object: ObjectRenderer, initialLocation: CGPoint, lastLocation: CGPoint)
         case drawing(object: ObjectRenderer, state: DrawingSessionState)
         case plugin(plugin: PluginType, state: PluginState, initialLocation: CGPoint, lastLocation: CGPoint)
     }
@@ -88,11 +89,11 @@ extension XcapView {
     
     public enum State {
         case idle
-        case onObject(ObjectRenderer)
-        case onItem(object: ObjectRenderer, position: ObjectLayout.Position)
-        case editing(object: ObjectRenderer, position: ObjectLayout.Position)
-        case dragging(ObjectRenderer)
         case selecting
+        case onItem(object: ObjectRenderer, position: ObjectLayout.Position)
+        case onObject(ObjectRenderer)
+        case editing(object: ObjectRenderer, position: ObjectLayout.Position)
+        case moving([ObjectRenderer])
         case drawing(ObjectRenderer)
         case plugin(PluginType)
     }
@@ -352,16 +353,16 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         switch internalState {
         case .idle:
             return .idle
-        case let .onObject(object, _, _):
-            return .onObject(object)
-        case let .onItem(object, position, _):
-            return .onItem(object: object, position: position)
-        case let .editing(object, position, _, _):
-            return .editing(object: object, position: position)
-        case let .dragging(object, _, _):
-            return .dragging(object)
         case .selecting:
             return .selecting
+        case let .onItem(object, position, _):
+            return .onItem(object: object, position: position)
+        case let .onObject(object, _, _):
+            return .onObject(object)
+        case let .editing(object, position, _, _):
+            return .editing(object: object, position: position)
+        case .moving:
+            return .moving(selectedObjects)
         case let .drawing(object, _):
             return .drawing(object)
         case let .plugin(plugin, _, _, _):
@@ -500,7 +501,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         
         let location = convert(event.locationInWindow, from: nil)
         
-        touchDragged(at: location)
+        touchMoved(to: location)
     }
     #else
     open override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -510,7 +511,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
             return
         }
         
-        touchDragged(at: location)
+        touchMoved(to: location)
     }
     #endif
     
@@ -610,6 +611,8 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     open func addObjects(_ newObjects: [ObjectRenderer]) {
+        assertNonZeroContentSize()
+        
         let newObjects = newObjects.filter(canAddObject(_:))
         
         internalAddObjects(newObjects)
@@ -818,7 +821,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         
         if object is Editable {
             switch internalState {
-            case .editing, .dragging:
+            case .editing, .moving:
                 return .none
             case let .onItem(anObject, position, _):
                 return .items(anObject == object ? position : nil)
@@ -827,7 +830,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
             }
         } else {
             switch internalState {
-            case .editing, .dragging:
+            case .editing, .moving:
                 return .none
             case let .onObject(anObject, _, _):
                 return .boundingBox(anObject == object)
@@ -838,9 +841,6 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     private func drawObjects(context: CGContext) {
-        // Start
-        context.saveGState()
-        
         for object in objects where !selectedObjects.contains(object) {
             drawObject(object, context: context)
         }
@@ -863,9 +863,6 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         if let object = currentObject {
             drawObject(object, context: context)
         }
-        
-        // End
-        context.restoreGState()
     }
     
     private func drawObject(_ object: ObjectRenderer, context: CGContext) {
@@ -980,10 +977,12 @@ extension XcapView {
             let convertedLocation = convertLocation(fromViewToContent: location)
             
             if let plugin = findPlugin(for: .high, at: location) {
-                updatePlugin(plugin, touchBeganAt: location)
+                updatePlugin(plugin, didBeginAt: location)
             } else if let (object, position) = findEditableObject(at: convertedLocation) {
                 internalSelectObjects([object])
+                
                 internalState = .onItem(object: object, position: position, initialLocation: convertedLocation)
+                
                 redraw()
             } else if let object = findObject(at: convertedLocation) {
                 let alreadySelected = selectedObjects.contains(object)
@@ -996,59 +995,56 @@ extension XcapView {
                 
                 redraw()
             } else if let plugin = findPlugin(for: .low, at: location) {
-                updatePlugin(plugin, touchBeganAt: location)
+                updatePlugin(plugin, didBeginAt: location)
             } else {
-                updateSelecting(touchBeganAt: location)
+                selectingDidBegin(at: location)
             }
             
-        case .onObject, .onItem, .editing, .dragging, .selecting, .plugin:
+        case .selecting, .onItem, .onObject, .editing, .moving, .plugin:
             break
             
         case let .drawing(object, sessionState):
-            updateDrawing(object, touchBeganAt: location, sessionState: sessionState)
+            drawing(object, didBeginAt: location, sessionState: sessionState)
         }
     }
     
-    private func touchDragged(at location: CGPoint) {
+    private func touchMoved(to location: CGPoint) {
         switch internalState {
         case .idle:
             break
             
-        case let .onObject(object, _, initialLocation):
-            updateDragging(object, touchBeganAt: initialLocation)
-            updateDragging(object, touchDraggedAt: location, initialLocation: initialLocation, lastLocation: initialLocation)
+        case let .selecting(initialSelection, originalRect, convertedRect):
+            selectingDidMove(to: location, initialSelection: initialSelection, originalRect: originalRect, convertedRect: convertedRect)
             
         case let .onItem(object, position, initialLocation):
-            updateEditing(object, touchBeganAt: initialLocation, position: position)
-            updateEditing(object, touchDraggedAt: location, position: position, initialLocation: initialLocation, lastLocation: initialLocation)
+            editing(object, didBeginAt: initialLocation, position: position)
+            editing(object, didMoveTo: location, position: position, initialLocation: initialLocation, lastLocation: initialLocation)
+            
+        case let .onObject(object, _, initialLocation):
+            moving(object, didBeginAt: initialLocation)
+            moving(object, didMoveTo: location, initialLocation: initialLocation, lastLocation: initialLocation)
             
         case let .editing(object, position, initialLocation, lastLocation):
-            updateEditing(object, touchDraggedAt: location, position: position, initialLocation: initialLocation, lastLocation: lastLocation)
+            editing(object, didMoveTo: location, position: position, initialLocation: initialLocation, lastLocation: lastLocation)
             
-        case let .dragging(object, initialLocation, lastLocation):
-            updateDragging(object, touchDraggedAt: location, initialLocation: initialLocation, lastLocation: lastLocation)
-            
-        case let .selecting(initialSelection, originalRect, convertedRect):
-            updateSelecting(initialSelection: initialSelection,
-                            touchDraggedAt: location,
-                            originalRect: originalRect,
-                            convertedRect: convertedRect)
+        case let .moving(object, initialLocation, lastLocation):
+            moving(object, didMoveTo: location, initialLocation: initialLocation, lastLocation: lastLocation)
             
         case let .drawing(object, sessionState):
-            updateDrawing(object, touchDraggedAt: location, sessionState: sessionState)
+            drawing(object, didMoveTo: location, sessionState: sessionState)
             
         case let .plugin(plugin, _, initialLocation, lastLocation):
-            updatePlugin(plugin, touchDraggedAt: location, initialLocation: initialLocation, lastLocation: lastLocation)
+            updatePlugin(plugin, didMoveTo: location, initialLocation: initialLocation, lastLocation: lastLocation)
         }
     }
     
     private func touchTracked(at location: CGPoint) {
         switch internalState {
-        case .idle, .onObject, .onItem, .editing, .dragging, .selecting, .plugin:
+        case .idle, .selecting, .onItem, .onObject, .editing, .moving, .plugin:
             break
             
         case let .drawing(object, sessionState):
-            updateDrawing(object, touchTrackedAt: location, sessionState: sessionState)
+            drawing(object, didTrackAt: location, sessionState: sessionState)
         }
     }
     
@@ -1056,6 +1052,13 @@ extension XcapView {
         switch internalState {
         case .idle:
             break
+            
+        case let .selecting(initialSelection, originalRect, convertedRect):
+            selectingDidEnd(at: location, initialSelection: initialSelection, originalRect: originalRect, convertedRect: convertedRect)
+            
+        case .onItem:
+            internalState = .idle
+            redraw()
             
         case let .onObject(object, alreadySelected, _):
             if isBidirectionalSelectionEnabled {
@@ -1070,27 +1073,17 @@ extension XcapView {
             
             redraw()
             
-        case .onItem:
-            internalState = .idle
-            redraw()
-            
         case let .editing(object, position, initialLocation, lastLocation):
-            updateEditing(object, touchEndedAt: location, position: position, initialLocation: initialLocation, lastLocation: lastLocation)
+            editing(object, didEndAt: location, position: position, initialLocation: initialLocation, lastLocation: lastLocation)
             
-        case let .dragging(object, initialLocation, lastLocation):
-            updateDragging(object, touchEndedAt: location, initialLocation: initialLocation, lastLocation: lastLocation)
-            
-        case let .selecting(initialSelection, originalRect, convertedRect):
-            updateSelecting(initialSelection: initialSelection,
-                            touchEndedAt: location,
-                            originalRect: originalRect,
-                            convertedRect: convertedRect)
+        case let .moving(object, initialLocation, lastLocation):
+            moving(object, didEndAt: location, initialLocation: initialLocation, lastLocation: lastLocation)
             
         case let .drawing(object, sessionState):
-            updateDrawing(object, touchEndedAt: location, sessionState: sessionState)
+            drawing(object, didEndAt: location, sessionState: sessionState)
             
         case let .plugin(plugin, _, initialLocation, lastLocation):
-            updatePlugin(plugin, touchEnded: location, initialLocation: initialLocation, lastLocation: lastLocation)
+            updatePlugin(plugin, didEndAt: location, initialLocation: initialLocation, lastLocation: lastLocation)
         }
     }
     
@@ -1100,17 +1093,17 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updateEditing(_ object: ObjectRenderer, touchBeganAt location: CGPoint, position: ObjectLayout.Position) {
+    private func editing(_ object: ObjectRenderer, didBeginAt location: CGPoint, position: ObjectLayout.Position) {
         let location = convertLocation(fromViewToContent: location)
         internalState = .editing(object: object, position: position, initialLocation: location, lastLocation: location)
         redraw()
     }
     
-    private func updateEditing(_ object: ObjectRenderer,
-                               touchDraggedAt location: CGPoint,
-                               position: ObjectLayout.Position,
-                               initialLocation: CGPoint,
-                               lastLocation: CGPoint)
+    private func editing(_ object: ObjectRenderer,
+                         didMoveTo location: CGPoint,
+                         position: ObjectLayout.Position,
+                         initialLocation: CGPoint,
+                         lastLocation: CGPoint)
     {
         let location = convertLocation(fromViewToContent: location)
         let dx = location.x - lastLocation.x
@@ -1124,14 +1117,14 @@ extension XcapView {
         
         redraw()
         
-        delegate?.xcapView(self, didEditObject: object, position: position)
+        delegate?.xcapView(self, didEditObject: object, at: position)
     }
     
-    private func updateEditing(_ object: ObjectRenderer,
-                               touchEndedAt location: CGPoint,
-                               position: ObjectLayout.Position,
-                               initialLocation: CGPoint,
-                               lastLocation: CGPoint)
+    private func editing(_ object: ObjectRenderer,
+                         didEndAt location: CGPoint,
+                         position: ObjectLayout.Position,
+                         initialLocation: CGPoint,
+                         lastLocation: CGPoint)
     {
         let location = convertLocation(fromViewToContent: location)
         let offset = CGPoint(x: location.x - initialLocation.x, y: location.y - initialLocation.y)
@@ -1148,13 +1141,13 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updateDragging(_ object: ObjectRenderer, touchBeganAt location: CGPoint) {
-        internalState = .dragging(object: object, initialLocation: location, lastLocation: location)
+    private func moving(_ object: ObjectRenderer, didBeginAt location: CGPoint) {
+        internalState = .moving(object: object, initialLocation: location, lastLocation: location)
         
         redraw()
     }
     
-    private func updateDragging(_ object: ObjectRenderer, touchDraggedAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+    private func moving(_ object: ObjectRenderer, didMoveTo location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
         let location = convertLocation(fromViewToContent: location)
         let dx = location.x - lastLocation.x
         let dy = location.y - lastLocation.y
@@ -1163,14 +1156,14 @@ extension XcapView {
             object.translate(x: dx, y: dy)
         }
         
-        internalState = .dragging(object: object, initialLocation: initialLocation, lastLocation: location)
+        internalState = .moving(object: object, initialLocation: initialLocation, lastLocation: location)
         
         redraw()
         
-        delegate?.xcapView(self, didDragObjects: selectedObjects)
+        delegate?.xcapView(self, didMoveObjects: selectedObjects)
     }
     
-    private func updateDragging(_ object: ObjectRenderer, touchEndedAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+    private func moving(_ object: ObjectRenderer, didEndAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
         let location = convertLocation(fromViewToContent: location)
         let offset = CGPoint(x: location.x - initialLocation.x, y: location.y - initialLocation.y)
 
@@ -1186,7 +1179,7 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updateSelecting(touchBeganAt location: CGPoint) {
+    private func selectingDidBegin(at location: CGPoint) {
         let location = CGPoint(x: location.x.rounded() + 0.5, y: location.y.rounded() + 0.5)
         let originalRect = CGRect(origin: location, size: .zero)
         let convertedLocation = convertLocation(fromViewToContent: location)
@@ -1201,11 +1194,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updateSelecting(initialSelection: [ObjectRenderer],
-                                 touchDraggedAt location: CGPoint,
-                                 originalRect: CGRect,
-                                 convertedRect: CGRect)
-    {
+    private func selectingDidMove(to location: CGPoint, initialSelection: [ObjectRenderer], originalRect: CGRect, convertedRect: CGRect) {
         let originalSize = CGSize(width: (location.x - originalRect.origin.x).rounded(),
                                   height: (location.y - originalRect.origin.y).rounded())
         let originalRect = CGRect(origin: originalRect.origin, size: originalSize)
@@ -1225,11 +1214,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updateSelecting(initialSelection: [ObjectRenderer],
-                                 touchEndedAt location: CGPoint,
-                                 originalRect: CGRect,
-                                 convertedRect: CGRect)
-    {
+    private func selectingDidEnd(at location: CGPoint, initialSelection: [ObjectRenderer], originalRect: CGRect, convertedRect: CGRect) {
         internalState = .idle
         
         redraw()
@@ -1241,7 +1226,7 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updateDrawing(_ object: ObjectRenderer, touchBeganAt location: CGPoint, sessionState: DrawingSessionState) {
+    private func drawing(_ object: ObjectRenderer, didBeginAt location: CGPoint, sessionState: DrawingSessionState) {
         let location = convertLocation(fromViewToContent: location)
         
         switch object.layoutAction {
@@ -1274,23 +1259,23 @@ extension XcapView {
         redraw()
     }
     
-    private func updateDrawing(_ object: ObjectRenderer, touchDraggedAt location: CGPoint, sessionState: DrawingSessionState) {
+    private func drawing(_ object: ObjectRenderer, didMoveTo location: CGPoint, sessionState: DrawingSessionState) {
         let location = convertLocation(fromViewToContent: location)
         
         switch object.layoutAction {
         case .continuousPush, .continuousPushThenFinish:
             object.push(location)
-            internalState = .drawing(object: object, state: .dragging)
+            internalState = .drawing(object: object, state: .moving)
             
         case .push, .pushSection, .finish:
             object.updateLast(location)
-            internalState = .drawing(object: object, state: .dragging)
+            internalState = .drawing(object: object, state: .moving)
         }
         
         redraw()
     }
     
-    private func updateDrawing(_ object: ObjectRenderer, touchTrackedAt location: CGPoint, sessionState: DrawingSessionState) {
+    private func drawing(_ object: ObjectRenderer, didTrackAt location: CGPoint, sessionState: DrawingSessionState) {
         guard sessionState == .tracking else {
             return
         }
@@ -1304,7 +1289,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updateDrawing(_ object: ObjectRenderer, touchEndedAt location: CGPoint, sessionState: DrawingSessionState) {
+    private func drawing(_ object: ObjectRenderer, didEndAt location: CGPoint, sessionState: DrawingSessionState) {
         let location = convertLocation(fromViewToContent: location)
         let action = object.layoutAction
         
@@ -1336,7 +1321,7 @@ extension XcapView {
                     break
                 }
                 
-            case .idle, .dragging:
+            case .idle, .moving:
                 if case .finish = action {
                     finishDrawingSession()
                 } else {
@@ -1354,7 +1339,7 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updatePlugin(_ plugin: PluginType, touchBeganAt location: CGPoint) {
+    private func updatePlugin(_ plugin: PluginType, didBeginAt location: CGPoint) {
         let pluginState: PluginState = .began(location: location)
         
         plugin.update(in: self, state: pluginState)
@@ -1364,7 +1349,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updatePlugin(_ plugin: PluginType, touchDraggedAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+    private func updatePlugin(_ plugin: PluginType, didMoveTo location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
         let pluginState: PluginState = .dragged(location: location, initialLocation: initialLocation, lastLocation: lastLocation)
         
         plugin.update(in: self, state: pluginState)
@@ -1374,7 +1359,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updatePlugin(_ plugin: PluginType, touchEnded location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+    private func updatePlugin(_ plugin: PluginType, didEndAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
         plugin.update(in: self, state: .ended(location: location, initialLocation: initialLocation, lastLocation: location))
         plugin.update(in: self, state: .idle)
         
@@ -1449,7 +1434,7 @@ extension XcapView {
             
             xcapView.registerUndoDragObjects(objects, offset: offset, contentSize: xcapView.contentSize)
             
-            xcapView.delegate?.xcapView(xcapView, didDragObjects: objects)
+            xcapView.delegate?.xcapView(xcapView, didMoveObjects: objects)
         }
     }
     
@@ -1473,7 +1458,7 @@ extension XcapView {
             
             xcapView.registerUndoEditObject(object, at: position, offset: offset, contentSize: xcapView.contentSize)
             
-            xcapView.delegate?.xcapView(xcapView, didEditObject: object, position: position)
+            xcapView.delegate?.xcapView(xcapView, didEditObject: object, at: position)
         }
     }
     
