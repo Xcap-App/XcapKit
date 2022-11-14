@@ -1352,7 +1352,7 @@ extension XcapView {
     }
     
     private func updatePlugin(_ plugin: PluginType, didMoveTo location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
-        let pluginState: PluginState = .dragged(location: location, initialLocation: initialLocation, lastLocation: lastLocation)
+        let pluginState: PluginState = .moved(location: location, initialLocation: initialLocation, lastLocation: lastLocation)
         
         plugin.update(in: self, state: pluginState)
         

@@ -15,7 +15,7 @@ public enum PluginPriority {
 public enum PluginState {
     case idle
     case began(location: CGPoint)
-    case dragged(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
+    case moved(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
     case ended(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
 }
 
