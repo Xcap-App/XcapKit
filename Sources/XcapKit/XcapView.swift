@@ -749,10 +749,10 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     
     @discardableResult
     open func finishDrawingSession() -> ObjectRenderer? {
-        guard let object = currentObject, canAddObject(object) else {
+        guard let object = currentObject else {
             return nil
         }
-        guard !(delegate?.xcapView(self, shouldDiscardObject: object) ?? false) else {
+        guard canAddObject(object) && !(delegate?.xcapView(self, shouldDiscardObject: object) ?? false) else {
             cancelDrawingSession()
             return nil
         }
