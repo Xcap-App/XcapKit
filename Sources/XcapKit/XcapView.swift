@@ -884,15 +884,21 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         // Start
         context.saveGState()
         
-        context.translateBy(x: contentRect.origin.x, y: contentRect.origin.y)
-        
-        let transform = CGAffineTransform.identity
+        let scale = CGAffineTransform.identity
             .scaledBy(x: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y)
-        let convertedBoundingBox = object.boundingBox
-            .applying(transform)
-            .insetBy(dx: -selectionRange, dy: -selectionRange)
+        let translate = CGAffineTransform.identity
+            .translatedBy(x: contentRect.origin.x, y: contentRect.origin.y)
         let borderColor = highlight ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
         let fillColor = highlight ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
+        var convertedBoundingBox = object.boundingBox
+            .applying(scale)
+            .applying(translate)
+            .insetBy(dx: -selectionRange, dy: -selectionRange)
+        
+        convertedBoundingBox.origin.x = convertedBoundingBox.origin.x.rounded() + 0.5
+        convertedBoundingBox.origin.y = convertedBoundingBox.origin.y.rounded() + 0.5
+        convertedBoundingBox.size.width.round()
+        convertedBoundingBox.size.height.round()
         
         context.setFillColor(fillColor.cgColor)
         context.setStrokeColor(borderColor.cgColor)
