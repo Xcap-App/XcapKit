@@ -72,7 +72,7 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
         lhs === rhs
     }
     
-    private var subGraphics: [Drawable] = []
+    private var preliminaryGraphics: [Drawable] = []
     
     private var mainGraphics: [Drawable] = []
     
@@ -108,12 +108,12 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     }
     
     /// Default = `[.finishable, .unfinished]`
-    open var subDrawingStrategy: DrawingStrategy {
+    open var preliminaryGraphicsDrawingStrategy: DrawingStrategy {
         [.finishable, .unfinished]
     }
     
     /// Default = `[.finished, .finishable]`
-    open var mainDrawingStrategy: DrawingStrategy {
+    open var mainGraphicsDrawingStrategy: DrawingStrategy {
         [.finishable, .finished]
     }
     
@@ -457,13 +457,13 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     }
     
     private func update() {
-        if shouldDraw(with: subDrawingStrategy) {
-            subGraphics = makeSubGraphics()
+        if shouldDraw(with: preliminaryGraphicsDrawingStrategy) {
+            preliminaryGraphics = makePreliminaryGraphics()
         } else {
-            subGraphics.removeAll()
+            preliminaryGraphics.removeAll()
         }
         
-        if shouldDraw(with: mainDrawingStrategy) {
+        if shouldDraw(with: mainGraphicsDrawingStrategy) {
             mainGraphics = makeMainGraphics()
         } else {
             mainGraphics.removeAll()
@@ -472,7 +472,7 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
         redrawHandler?()
     }
     
-    open func makeSubGraphics() -> [Drawable] {
+    open func makePreliminaryGraphics() -> [Drawable] {
         let lineDash = PathGraphicsRenderer.LineDash(phase: 4, lengths: [4])
         let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth, lineDash: lineDash)
         let renderer = PathGraphicsRenderer(method: method, color: strokeColor) { path in
@@ -504,7 +504,7 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     }
     
     open func draw(context: CGContext) {
-        subGraphics.forEach { drawable in
+        preliminaryGraphics.forEach { drawable in
             drawable.draw(context: context)
         }
         
