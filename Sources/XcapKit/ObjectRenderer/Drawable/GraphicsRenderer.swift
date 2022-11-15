@@ -1,5 +1,5 @@
 //
-//  BasicGraphicsRenderer.swift
+//  GraphicsRenderer.swift
 //  
 //
 //  Created by scchn on 2022/11/3.
@@ -7,7 +7,7 @@
 
 import CoreGraphics
 
-public class BasicGraphicsRenderer: Drawable {
+public class GraphicsRenderer: Drawable {
     
     private let drawingHandler: (CGContext) -> Void
     
