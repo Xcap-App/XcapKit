@@ -9,12 +9,6 @@ import Foundation
 
 public struct Circle: Equatable, Hashable, Codable {
     
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(center.x)
-        hasher.combine(center.y)
-        hasher.combine(radius)
-    }
-    
     public var center: CGPoint
     
     public var radius: CGFloat

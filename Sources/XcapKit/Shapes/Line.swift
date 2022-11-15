@@ -18,13 +18,6 @@ extension Line {
 
 public struct Line: Equatable, Hashable, Codable {
     
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(start.x)
-        hasher.combine(start.y)
-        hasher.combine(end.x)
-        hasher.combine(end.y)
-    }
-    
     public var start: CGPoint
     
     public var end: CGPoint

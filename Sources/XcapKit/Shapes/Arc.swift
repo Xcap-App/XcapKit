@@ -9,15 +9,6 @@ import Foundation
 
 public struct Arc: Equatable, Hashable, Codable {
     
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(center.x)
-        hasher.combine(center.y)
-        hasher.combine(radius)
-        hasher.combine(start)
-        hasher.combine(end)
-        hasher.combine(clockwise)
-    }
-    
     public var center: CGPoint
     
     public var radius: CGFloat
