@@ -881,10 +881,6 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     private func drawBoundingBox(for object: ObjectRenderer, highlight: Bool, context: CGContext) {
-        guard let boundingBox = object.boundingBox else {
-            return
-        }
-        
         // Start
         context.saveGState()
         
@@ -892,7 +888,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         
         let transform = CGAffineTransform.identity
             .scaledBy(x: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y)
-        let convertedBoundingBox = boundingBox
+        let convertedBoundingBox = object.boundingBox
             .applying(transform)
             .insetBy(dx: -selectionRange, dy: -selectionRange)
         let borderColor = highlight ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor

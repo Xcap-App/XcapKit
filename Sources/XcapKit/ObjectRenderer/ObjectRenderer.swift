@@ -72,9 +72,9 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
         lhs === rhs
     }
     
-    private var structureBrushes: [Brush] = []
+    private var subGraphics: [Drawable] = []
     
-    private var mainBrushes: [Brush] = []
+    private var mainGraphics: [Drawable] = []
     
     // MARK: - Data
     
@@ -87,7 +87,15 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     
     open private(set) var isFinished = false
     
-    open private(set) var boundingBox: CGRect?
+    open var boundingBox: CGRect {
+        makeMainGraphics()
+            .compactMap { $0 as? PathGraphicsRenderer }
+            .reduce(CGMutablePath()) { resultPath, pathDesc in
+                resultPath.addPath(pathDesc.cgPath)
+                return resultPath
+            }
+            .boundingBoxOfPath
+    }
     
     // MARK: - Layout Control
     
@@ -100,7 +108,7 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     }
     
     /// Default = `[.finishable, .unfinished]`
-    open var structureDrawingStrategy: DrawingStrategy {
+    open var subDrawingStrategy: DrawingStrategy {
         [.finishable, .unfinished]
     }
     
@@ -418,8 +426,8 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     // MARK: - Selection
     
     open func selectionTest(point: CGPoint, range: CGFloat) -> Bool {
-        mainBrushes
-            .compactMap { $0 as? PathBrush }
+        mainGraphics
+            .compactMap { $0 as? PathGraphicsRenderer }
             .contains { pathBursh in
                 pathBursh.contains(point: point, range: range)
             }
@@ -449,35 +457,25 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     }
     
     private func update() {
-        if shouldDraw(with: structureDrawingStrategy) {
-            structureBrushes = makeStructureBrushes()
+        if shouldDraw(with: subDrawingStrategy) {
+            subGraphics = makeSubGraphics()
         } else {
-            structureBrushes.removeAll()
+            subGraphics.removeAll()
         }
         
         if shouldDraw(with: mainDrawingStrategy) {
-            let brushes = makeMainBrushes()
-            let path = brushes
-                .compactMap { $0 as? PathBrush }
-                .reduce(CGMutablePath()) { resultPath, pathDesc in
-                    resultPath.addPath(pathDesc.cgPath)
-                    return resultPath
-                }
-            
-            mainBrushes = brushes
-            boundingBox = path.boundingBoxOfPath
+            mainGraphics = makeMainGraphics()
         } else {
-            mainBrushes.removeAll()
-            boundingBox = nil
+            mainGraphics.removeAll()
         }
         
         redrawHandler?()
     }
     
-    open func makeStructureBrushes() -> [Brush] {
-        let lineDash = PathBrush.LineDash(phase: 2, lengths: [2])
-        let method = PathBrush.Method.stroke(lineWidth: lineWidth, lineDash: lineDash)
-        let desc = PathBrush(method: method, color: strokeColor) { path in
+    open func makeSubGraphics() -> [Drawable] {
+        let lineDash = PathGraphicsRenderer.LineDash(phase: 4, lengths: [4])
+        let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth, lineDash: lineDash)
+        let renderer = PathGraphicsRenderer(method: method, color: strokeColor) { path in
             layout.forEach { items in
                 if items.count > 1 {
                     path.addLines(between: items)
@@ -487,12 +485,12 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
             }
         }
         
-        return [desc]
+        return [renderer]
     }
     
-    open func makeMainBrushes() -> [Brush] {
-        let method = PathBrush.Method.stroke(lineWidth: lineWidth)
-        let desc = PathBrush(method: method, color: strokeColor) { path in
+    open func makeMainGraphics() -> [Drawable] {
+        let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth)
+        let renderer = PathGraphicsRenderer(method: method, color: strokeColor) { path in
             layout.forEach { items in
                 if items.count > 1 {
                     path.addLines(between: items)
@@ -502,15 +500,15 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
             }
         }
         
-        return [desc]
+        return [renderer]
     }
     
     open func draw(context: CGContext) {
-        structureBrushes.forEach { drawable in
+        subGraphics.forEach { drawable in
             drawable.draw(context: context)
         }
         
-        mainBrushes.forEach { drawable in
+        mainGraphics.forEach { drawable in
             drawable.draw(context: context)
         }
     }

@@ -6,7 +6,6 @@
 //
 
 import CoreGraphics
-import UIKit
 
 public class BasicGraphicsRenderer: Drawable {
     
