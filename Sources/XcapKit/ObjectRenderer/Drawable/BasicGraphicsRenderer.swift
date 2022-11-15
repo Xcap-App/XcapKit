@@ -1,13 +1,14 @@
 //
-//  BasicBrush.swift
+//  BasicGraphicsRenderer.swift
 //  
 //
 //  Created by scchn on 2022/11/3.
 //
 
 import CoreGraphics
+import UIKit
 
-public class BasicBrush: Brush {
+public class BasicGraphicsRenderer: Drawable {
     
     private let drawingHandler: (CGContext) -> Void
     
@@ -15,7 +16,7 @@ public class BasicBrush: Brush {
         self.drawingHandler = drawingHandler
     }
     
-    public override func draw(context: CGContext) {
+    public func draw(context: CGContext) {
         context.saveGState()
         drawingHandler(context)
         context.restoreGState()

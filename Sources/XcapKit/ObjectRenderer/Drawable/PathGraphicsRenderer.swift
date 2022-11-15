@@ -1,5 +1,5 @@
 //
-//  PathBrush.swift
+//  PathGraphicsRenderer.swift
 //  
 //
 //  Created by scchn on 2022/11/3.
@@ -8,7 +8,7 @@
 import Foundation
 import QuartzCore
 
-extension PathBrush {
+extension PathGraphicsRenderer {
     
     public enum LineCap {
         
@@ -75,7 +75,7 @@ extension PathBrush {
     
 }
 
-public class PathBrush: Brush {
+public class PathGraphicsRenderer: Drawable {
     
     public let cgPath: CGPath
     
@@ -119,7 +119,7 @@ public class PathBrush: Brush {
     
     // MARK: - Utils
     
-    public override func draw(context: CGContext) {
+    public func draw(context: CGContext) {
         // Start
         context.saveGState()
         
