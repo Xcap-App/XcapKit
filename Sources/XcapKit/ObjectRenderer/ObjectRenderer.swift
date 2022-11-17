@@ -5,8 +5,11 @@
 //  Created by scchn on 2022/11/3.
 //
 
-import Foundation
-import CoreGraphics
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 extension ObjectRenderer {
     
@@ -63,10 +66,34 @@ extension ObjectRenderer {
         case fixed(CGPoint)
     }
     
+    private struct Color: Codable {
+        
+        var red: CGFloat
+        var green: CGFloat
+        var blue: CGFloat
+        var alpha: CGFloat
+        
+        init?(color: PlatformColor) {
+            guard let ciColor = CIColor(color: color) else {
+                return nil
+            }
+            
+            red = ciColor.red
+            green = ciColor.green
+            blue = ciColor.blue
+            alpha = ciColor.alpha
+        }
+        
+        var platformColor: PlatformColor {
+            .init(red: red, green: green, blue: blue, alpha: alpha)
+        }
+        
+    }
+    
 }
 
 @objcMembers
-open class ObjectRenderer: NSObject, RedrawAndUndoController {
+open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     
     public static func ==(lhs: ObjectRenderer, rhs: ObjectRenderer) -> Bool {
         lhs === rhs
@@ -152,6 +179,10 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
     public required override init() {
         super.init()
         
+        commonInit()
+    }
+    
+    private func commonInit() {
         setupRedrawHandler { [weak self] in
             self?.update()
         }
@@ -511,6 +542,55 @@ open class ObjectRenderer: NSObject, RedrawAndUndoController {
         mainGraphics.forEach { drawable in
             drawable.draw(context: context)
         }
+    }
+    
+    // MARK: - Codable
+    
+    enum CodingKeys: String, CodingKey {
+        case layout
+        case lineWidth
+        case strokeColor
+        case fillColor
+        case rotationCenter
+        case rotationAngle
+        case isFinished
+    }
+    
+    public required init(from decoder: Decoder) throws {
+        super.init()
+        
+        commonInit()
+        
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        layout = try container.decode(ObjectLayout.self, forKey: .layout)
+        lineWidth = try container.decode(CGFloat.self, forKey: .lineWidth)
+        
+        if let color = try container.decodeIfPresent(Color.self, forKey: .strokeColor) {
+            strokeColor = color.platformColor
+        }
+        
+        if let color = try container.decodeIfPresent(Color.self, forKey: .fillColor) {
+            fillColor = color.platformColor
+        }
+        
+        rotationCenter = try container.decodeIfPresent(PointDescriptor.self, forKey: .rotationCenter)
+        rotationAngle = try container.decode(Angle.self, forKey: .rotationAngle)
+        isFinished = try container.decode(Bool.self, forKey: .isFinished)
+    }
+    
+    open func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let strokeColor = Color(color: strokeColor)
+        let fillColor = Color(color: fillColor)
+        
+        try container.encode(layout, forKey: .layout)
+        try container.encode(lineWidth, forKey: .lineWidth)
+        try container.encodeIfPresent(strokeColor, forKey: .strokeColor)
+        try container.encodeIfPresent(fillColor, forKey: .fillColor)
+        try container.encodeIfPresent(rotationCenter, forKey: .rotationCenter)
+        try container.encode(rotationAngle, forKey: .rotationAngle)
+        try container.encode(isFinished, forKey: .isFinished)
     }
     
 }
