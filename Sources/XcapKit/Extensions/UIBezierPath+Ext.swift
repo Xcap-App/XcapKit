@@ -27,7 +27,7 @@ extension UIBezierPath {
         let origin = circle.center.extended(length: circle.radius, angle: 0)
         
         move(to: origin)
-        addArc(withCenter: circle.center, radius: circle.radius, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+        addArc(withCenter: circle.center, radius: circle.radius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
     }
     
 }

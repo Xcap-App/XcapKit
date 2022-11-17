@@ -36,7 +36,7 @@ extension CGContext {
         let origin = circle.center.extended(length: circle.radius, angle: 0)
         
         move(to: origin)
-        addArc(center: circle.center, radius: circle.radius, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+        addArc(center: circle.center, radius: circle.radius, startAngle: 0, endAngle: .pi * 2, clockwise: false)
     }
     
 }
