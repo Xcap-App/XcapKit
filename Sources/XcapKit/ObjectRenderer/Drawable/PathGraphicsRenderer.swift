@@ -109,14 +109,6 @@ public class PathGraphicsRenderer: Drawable {
         self.init(method: method, color: color, path: path.cgPath)
     }
     
-    public convenience init(method: Method, color: PlatformColor, shadow: Shadow? = nil, _ make: (PlatformBezierPath) -> Void) {
-        let path = PlatformBezierPath()
-        
-        make(path)
-        
-        self.init(method: method, color: color, path: path.cgPath)
-    }
-    
     // MARK: - Utils
     
     public func draw(context: CGContext) {
