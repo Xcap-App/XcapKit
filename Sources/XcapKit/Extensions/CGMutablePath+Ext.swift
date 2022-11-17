@@ -1,25 +1,14 @@
 //
-//  CGContext+Ext.swift
+//  CGMutablePath.swift
 //  
 //
-//  Created by scchn on 2022/11/3.
+//  Created by scchn on 2022/11/17.
 //
 
-#if os(macOS)
-import AppKit
-#else
-import UIKit
-#endif
+import Foundation
+import CoreGraphics
 
-extension CGContext {
-    
-    static var current: CGContext? {
-        #if os(macOS)
-        return NSGraphicsContext.current?.cgContext
-        #else
-        return UIGraphicsGetCurrentContext()
-        #endif
-    }
+extension CGMutablePath {
     
     public func addLine(_ line: Line) {
         addLines(between: [line.start, line.end])

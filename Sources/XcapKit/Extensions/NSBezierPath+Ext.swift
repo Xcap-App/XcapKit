@@ -47,6 +47,26 @@ extension NSBezierPath {
         
         return path
     }
+    
+    public func addLine(_ line: Line) {
+        var points = [line.start, line.end]
+        appendPoints(&points, count: 2)
+    }
+    
+    public func addArc(_ arc: Arc) {
+        let origin = arc.center.extended(length: arc.radius, angle: arc.start)
+        
+        move(to: origin)
+        appendArc(withCenter: arc.center, radius: arc.radius, startAngle: arc.start, endAngle: arc.end, clockwise: arc.clockwise)
+    }
+    
+    public func addCircle(_ circle: Circle) {
+        let origin = circle.center.extended(length: circle.radius, angle: 0)
+        
+        move(to: origin)
+        appendArc(withCenter: circle.center, radius: circle.radius, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+    }
+    
 }
 
 #endif
