@@ -13,6 +13,34 @@ import UIKit
 
 extension ObjectRenderer {
     
+    // ----- Private -----
+    
+    private struct Color: Codable {
+        
+        var red: CGFloat
+        var green: CGFloat
+        var blue: CGFloat
+        var alpha: CGFloat
+        
+        init?(color: PlatformColor) {
+            guard let ciColor = CIColor(color: color) else {
+                return nil
+            }
+            
+            red = ciColor.red
+            green = ciColor.green
+            blue = ciColor.blue
+            alpha = ciColor.alpha
+        }
+        
+        var platformColor: PlatformColor {
+            .init(red: red, green: green, blue: blue, alpha: alpha)
+        }
+        
+    }
+    
+    // ----- Public -----
+    
     public enum LayoutAction: Equatable {
         
         case push(finishable: Bool)
@@ -64,30 +92,6 @@ extension ObjectRenderer {
     public enum PointDescriptor: Equatable, Hashable, Codable {
         case item(ObjectLayout.Position)
         case fixed(CGPoint)
-    }
-    
-    private struct Color: Codable {
-        
-        var red: CGFloat
-        var green: CGFloat
-        var blue: CGFloat
-        var alpha: CGFloat
-        
-        init?(color: PlatformColor) {
-            guard let ciColor = CIColor(color: color) else {
-                return nil
-            }
-            
-            red = ciColor.red
-            green = ciColor.green
-            blue = ciColor.blue
-            alpha = ciColor.alpha
-        }
-        
-        var platformColor: PlatformColor {
-            .init(red: red, green: green, blue: blue, alpha: alpha)
-        }
-        
     }
     
 }
