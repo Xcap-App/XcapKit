@@ -60,6 +60,10 @@ extension ObjectRenderer {
             }
         }
         
+        public static func singleSection(withNumberOfItems items: Int, for layout: ObjectLayout) -> LayoutAction {
+            layout.first?.count != items ? .push(finishable: false) : .finish
+        }
+        
     }
     
     public struct DrawingStrategy: OptionSet {
