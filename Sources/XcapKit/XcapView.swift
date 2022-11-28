@@ -74,7 +74,7 @@ extension XcapView {
         case editing(object: ObjectRenderer, position: ObjectLayout.Position, initialLocation: CGPoint, lastLocation: CGPoint)
         case moving(object: ObjectRenderer, initialLocation: CGPoint, lastLocation: CGPoint)
         case drawing(object: ObjectRenderer, state: DrawingSessionState)
-        case plugin(plugin: PluginType, state: PluginState, initialLocation: CGPoint, lastLocation: CGPoint)
+        case plugin(plugin: Plugin, state: Plugin.State, initialLocation: CGPoint, lastLocation: CGPoint)
     }
     
     private enum ObjectDecoration {
@@ -95,7 +95,7 @@ extension XcapView {
         case editing(object: ObjectRenderer, position: ObjectLayout.Position)
         case moving([ObjectRenderer])
         case drawing(ObjectRenderer)
-        case plugin(PluginType)
+        case plugin(Plugin)
     }
     
     public enum UndoAction {
@@ -222,11 +222,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     
     // ----- Plugin Settings -----
     
-    open var plugins: [PluginType] = [] {
-        didSet {
-            redraw()
-        }
-    }
+    open private(set) var plugins: [Plugin] = []
     
     // ----- Overrides -----
     
@@ -466,13 +462,40 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     
     // MARK: - Plugin Utils
     
-    private func findPlugin(for priority: PluginPriority, at location: CGPoint) -> PluginType? {
+    private func findPlugin(for priority: Plugin.Priority, at location: CGPoint) -> Plugin? {
         return plugins.first { plugin in
-            guard plugin.priority == priority else {
+            guard plugin.priority == priority, plugin.isEnabled else {
                 return false
             }
             return plugin.shouldBegin(in: self, location: location)
         }
+    }
+    
+    open func addPlugin(_ plugin: Plugin) {
+        guard !plugins.contains(where: { $0 === plugin }) else {
+            return
+        }
+        
+        plugin.redrawHandler = { [weak self] in
+            self?.redraw()
+        }
+        plugin.undoManager = undoManager
+        
+        plugins.append(plugin)
+        
+        redraw()
+    }
+    
+    open func removePlugin(_ plugin: Plugin) {
+        guard let index = plugins.firstIndex(where: { $0 === plugin }) else {
+            return
+        }
+        
+        let plugin = plugins.remove(at: index)
+        plugin.redrawHandler = nil
+        plugin.undoManager = nil
+        
+        redraw()
     }
     
     // MARK: - Platform Touch Events
@@ -939,8 +962,8 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     private func drawPlugins(context: CGContext) {
-        for plugin in plugins {
-            let pluginState: PluginState = {
+        for plugin in plugins where plugin.isEnabled {
+            let pluginState: Plugin.State = {
                 if case let .plugin(aPlugin, state, _, _) = internalState, aPlugin === plugin {
                     return state
                 } else {
@@ -1343,8 +1366,8 @@ extension XcapView {
 
 extension XcapView {
     
-    private func updatePlugin(_ plugin: PluginType, didBeginAt location: CGPoint) {
-        let pluginState: PluginState = .began(location: location)
+    private func updatePlugin(_ plugin: Plugin, didBeginAt location: CGPoint) {
+        let pluginState: Plugin.State = .began(location: location)
         
         plugin.update(in: self, state: pluginState)
         
@@ -1353,8 +1376,8 @@ extension XcapView {
         redraw()
     }
     
-    private func updatePlugin(_ plugin: PluginType, didMoveTo location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
-        let pluginState: PluginState = .moved(location: location, initialLocation: initialLocation, lastLocation: lastLocation)
+    private func updatePlugin(_ plugin: Plugin, didMoveTo location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+        let pluginState: Plugin.State = .moved(location: location, initialLocation: initialLocation, lastLocation: lastLocation)
         
         plugin.update(in: self, state: pluginState)
         
@@ -1363,7 +1386,7 @@ extension XcapView {
         redraw()
     }
     
-    private func updatePlugin(_ plugin: PluginType, didEndAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
+    private func updatePlugin(_ plugin: Plugin, didEndAt location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint) {
         plugin.update(in: self, state: .ended(location: location, initialLocation: initialLocation, lastLocation: location))
         plugin.update(in: self, state: .idle)
         
