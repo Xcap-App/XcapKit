@@ -7,11 +7,18 @@
 
 import Foundation
 
+private var kUndoManagerAssociation: UInt8 = 0
+
 protocol RedrawAndUndoController: NSObject {
-    var undoManager: UndoManager? { get }
+    
 }
 
 extension RedrawAndUndoController {
+    
+    var undoManager: UndoManager? {
+        get { objc_getAssociatedObject(self, &kUndoManagerAssociation) as? UndoManager }
+        set { objc_setAssociatedObject(self, &kUndoManagerAssociation, newValue, .OBJC_ASSOCIATION_RETAIN) }
+    }
     
     func setupRedrawHandler(_ redrawHandler: @escaping () -> Void) {
         let properties = Mirror(reflecting: self).properties(ofType: RedrawableType.self)

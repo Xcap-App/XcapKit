@@ -161,8 +161,6 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     
     // MARK: - Settings
     
-    open var undoManager: UndoManager?
-    
     /// Default = `nil`
     ///
     /// Setter: ``setRotationCenter(_:)``

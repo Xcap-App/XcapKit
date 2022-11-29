@@ -486,12 +486,18 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         redraw()
     }
     
+    /// Removes the given plugin and the related undo actions.
     open func removePlugin(_ plugin: Plugin) {
         guard let index = plugins.firstIndex(of: plugin) else {
             return
         }
         
         let plugin = plugins.remove(at: index)
+        
+        if let undoManager = plugin.undoManager {
+            undoManager.removeAllActions(withTarget: plugin)
+        }
+        
         plugin.redrawHandler = nil
         plugin.undoManager = nil
         

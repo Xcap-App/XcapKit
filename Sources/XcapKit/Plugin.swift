@@ -29,8 +29,6 @@ extension Plugin {
 @objcMembers
 open class Plugin: NSObject, RedrawAndUndoController {
     
-    var undoManager: UndoManager?
-    
     var redrawHandler: (() -> Void)?
     
     // MARK: - Data
