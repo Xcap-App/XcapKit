@@ -112,7 +112,7 @@ extension ObjectRenderer {
 }
 
 @objcMembers
-open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
+open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     
     private var preliminaryGraphics: [Drawable] = []
     
@@ -172,15 +172,15 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     open private(set) var rotationAngle = Angle(radians: 0)
     
     /// Default = Black
-    @Redrawable
+    @Setting
     dynamic open var strokeColor: PlatformColor = .black
     
     /// Default = White
-    @Redrawable
+    @Setting
     dynamic open var fillColor: PlatformColor = .white
     
     /// Default = 1
-    @Redrawable
+    @Setting
     dynamic open var lineWidth: CGFloat = 1
     
     // MARK: - Events
@@ -196,7 +196,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     }
     
     private func commonInit() {
-        registerRedrawables { [weak self] in
+        registerSettings { [weak self] in
             self?.update()
         }
     }

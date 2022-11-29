@@ -2,7 +2,7 @@
 //  Plugin.swift
 //  
 //
-//  Created by 陳世爵 on 2022/11/28.
+//  Created by scchn on 2022/11/28.
 //
 
 import Foundation
@@ -27,7 +27,7 @@ extension Plugin {
 }
 
 @objcMembers
-open class Plugin: NSObject, RedrawAndUndoController {
+open class Plugin: NSObject, SettingsInspector {
     
     var redrawHandler: (() -> Void)?
     
@@ -39,7 +39,7 @@ open class Plugin: NSObject, RedrawAndUndoController {
     
     // MARK: - Settings
     
-    @Redrawable
+    @Setting
     open var isEnabled: Bool = false
     
     // MARK: - Life Cycle
@@ -47,7 +47,7 @@ open class Plugin: NSObject, RedrawAndUndoController {
     public required override init() {
         super.init()
         
-        registerRedrawables { [weak self] in
+        registerSettings { [weak self] in
             self?.redrawHandler?()
         }
     }

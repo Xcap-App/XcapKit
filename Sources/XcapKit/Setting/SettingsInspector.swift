@@ -1,5 +1,5 @@
 //
-//  RedrawAndUndoController.swift
+//  SettingsInspector.swift
 //  
 //
 //  Created by scchn on 2022/11/4.
@@ -7,21 +7,21 @@
 
 import Foundation
 
-private var kUndoManagerAssociation: UInt8 = 0
-
-protocol RedrawAndUndoController: NSObject {
+protocol SettingsInspector: NSObject {
     
 }
 
-extension RedrawAndUndoController {
+private var kUndoManagerAssociation: UInt8 = 0
+
+extension SettingsInspector {
     
     var undoManager: UndoManager? {
         get { objc_getAssociatedObject(self, &kUndoManagerAssociation) as? UndoManager }
         set { objc_setAssociatedObject(self, &kUndoManagerAssociation, newValue, .OBJC_ASSOCIATION_RETAIN) }
     }
     
-    func registerRedrawables(redrawHandler: @escaping () -> Void) {
-        let properties = Mirror(reflecting: self).properties(ofType: RedrawableType.self)
+    func registerSettings(redrawHandler: @escaping () -> Void) {
+        let properties = Mirror(reflecting: self).properties(ofType: SettingObservable.self)
         
         for (key, value) in properties {
             value.valueDidUpdate = { [weak self, weak value] (new: Any, old: Any) in
@@ -29,7 +29,9 @@ extension RedrawAndUndoController {
                     return
                 }
                 
-                redrawHandler()
+                if value.redrawMode == .enable {
+                    redrawHandler()
+                }
                 
                 if case .enable(let name) = value.undoMode {
                     let keyPath = String(key.dropFirst())

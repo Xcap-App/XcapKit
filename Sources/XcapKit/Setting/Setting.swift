@@ -1,5 +1,5 @@
 //
-//  Redrawable.swift
+//  Setting.swift
 //  
 //
 //  Created by scchn on 2022/11/3.
@@ -7,22 +7,14 @@
 
 import Foundation
 
-public enum UndoMode {
-    case disable
-    case enable(name: String?)
-}
-
-public protocol Undoable: AnyObject {
-    var undoMode: UndoMode { get set }
-}
-
-/// `Value` must be Objective-C compatible.
 @propertyWrapper
-public class Redrawable<Value>: RedrawableType, Undoable {
+public final class Setting<Value>: SettingObservable {
     
     var valueDidUpdate: ((Any, Any) -> Void)?
     
     public var undoMode: UndoMode
+    
+    public var redrawMode: RedrawMode
     
     public var wrappedValue: Value {
         didSet {
@@ -30,13 +22,14 @@ public class Redrawable<Value>: RedrawableType, Undoable {
         }
     }
     
-    public var projectedValue: Undoable {
+    public var projectedValue: SettingType {
         self
     }
     
-    public init(wrappedValue: Value, undoMode: UndoMode = .enable(name: nil)) {
+    public init(wrappedValue: Value, undoMode: UndoMode = .enable(name: nil), redrawMode: RedrawMode = .enable) {
         self.wrappedValue = wrappedValue
         self.undoMode = undoMode
+        self.redrawMode = redrawMode
     }
     
 }

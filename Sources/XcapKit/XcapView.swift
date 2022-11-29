@@ -108,7 +108,7 @@ extension XcapView {
 }
 
 @objcMembers
-open class XcapView: PlatformView, RedrawAndUndoController {
+open class XcapView: PlatformView, SettingsInspector {
     
     #if os(macOS)
     private var trackingArea: NSTrackingArea?
@@ -155,45 +155,45 @@ open class XcapView: PlatformView, RedrawAndUndoController {
         didSet { contentSizeDidChange(oldValue) }
     }
     
-    @Redrawable
+    @Setting
     dynamic open var contentBackgroundColor: PlatformColor = .white
     
     // ----- Selection Settings -----
     
-    @Redrawable
+    @Setting
     dynamic open var selectionRange: CGFloat = 10 {
         didSet { updateContentInfo() }
     }
     
-    @Redrawable
+    @Setting
     dynamic open var selectionRectBorderColor: PlatformColor = .lightGray
     
-    @Redrawable
+    @Setting
     dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
     
     // ----- Drawing Session Settings -----
     
-    @Redrawable
+    @Setting
     dynamic open var drawingSessionLineWidth: CGFloat = 1
     
-    @Redrawable
+    @Setting
     dynamic open var drawingSessionStrokeColor: PlatformColor = .black
     
-    @Redrawable
+    @Setting
     dynamic open var drawingSessionFillColor: PlatformColor = .white
     
     // ----- Object Item Settings -----
     
-    @Redrawable
+    @Setting
     dynamic open var objectItemBorderColor: PlatformColor = .black
     
-    @Redrawable
+    @Setting
     dynamic open var objectItemFillColor: PlatformColor = .white
     
-    @Redrawable
+    @Setting
     dynamic open var objectItemHighlightBorderColor: PlatformColor = .black
     
-    @Redrawable
+    @Setting
     dynamic open var objectItemHighlightFillColor: PlatformColor = {
         #if os(macOS)
         return .controlAccentColor
@@ -204,16 +204,16 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     
     // ----- Object Bounding Box Settings -----
     
-    @Redrawable
+    @Setting
     dynamic open var objectBoundingBoxBorderColor: PlatformColor = .black
     
-    @Redrawable
+    @Setting
     dynamic open var objectBoundingBoxFillColor: PlatformColor = .clear
     
-    @Redrawable
+    @Setting
     dynamic open var objectBoundingBoxHighlightBorderColor: PlatformColor = .black
     
-    @Redrawable
+    @Setting
     dynamic open var objectBoundingBoxHighlightFillColor: PlatformColor = .cyan.withAlphaComponent(0.3)
     
     // ----- Undo Settings -----
@@ -253,7 +253,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     private func commonInit() {
         setupNotification()
         
-        registerRedrawables { [weak self] in
+        registerSettings { [weak self] in
             self?.redraw()
         }
     }
