@@ -114,10 +114,6 @@ extension ObjectRenderer {
 @objcMembers
 open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     
-    public static func ==(lhs: ObjectRenderer, rhs: ObjectRenderer) -> Bool {
-        lhs === rhs
-    }
-    
     private var preliminaryGraphics: [Drawable] = []
     
     private var mainGraphics: [Drawable] = []

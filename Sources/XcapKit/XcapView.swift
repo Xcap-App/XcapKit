@@ -472,7 +472,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     open func addPlugin(_ plugin: Plugin) {
-        guard !plugins.contains(where: { $0 === plugin }) else {
+        guard !plugins.contains(plugin) else {
             return
         }
         
@@ -487,7 +487,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     }
     
     open func removePlugin(_ plugin: Plugin) {
-        guard let index = plugins.firstIndex(where: { $0 === plugin }) else {
+        guard let index = plugins.firstIndex(of: plugin) else {
             return
         }
         
@@ -964,7 +964,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     private func drawPlugins(context: CGContext) {
         for plugin in plugins where plugin.isEnabled {
             let pluginState: Plugin.State = {
-                if case let .plugin(aPlugin, state, _, _) = internalState, aPlugin === plugin {
+                if case let .plugin(aPlugin, state, _, _) = internalState, aPlugin == plugin {
                     return state
                 } else {
                     return .idle
