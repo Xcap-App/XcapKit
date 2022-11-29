@@ -253,7 +253,7 @@ open class XcapView: PlatformView, RedrawAndUndoController {
     private func commonInit() {
         setupNotification()
         
-        setupRedrawHandler { [weak self] in
+        registerRedrawables { [weak self] in
             self?.redraw()
         }
     }

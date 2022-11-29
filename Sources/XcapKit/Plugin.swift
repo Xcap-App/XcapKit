@@ -47,7 +47,7 @@ open class Plugin: NSObject, RedrawAndUndoController {
     public required override init() {
         super.init()
         
-        setupRedrawHandler { [weak self] in
+        registerRedrawables { [weak self] in
             self?.redrawHandler?()
         }
     }

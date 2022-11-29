@@ -196,7 +196,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     }
     
     private func commonInit() {
-        setupRedrawHandler { [weak self] in
+        registerRedrawables { [weak self] in
             self?.update()
         }
     }
