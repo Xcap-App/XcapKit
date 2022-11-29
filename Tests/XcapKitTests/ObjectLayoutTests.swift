@@ -27,7 +27,7 @@ final class ObjectLayoutTests: XCTestCase {
         XCTAssertEqual(layout.index(after: 0), 1)
         XCTAssertEqual(layout.index(before: 1), 0)
 
-        XCTAssertEqual(layout[position: position], item)
+        XCTAssertEqual(layout.item(at: position), item)
 
         XCTAssertEqual(layout.pop(), item)
         XCTAssertEqual(layout.data, [[.zero, .zero]])

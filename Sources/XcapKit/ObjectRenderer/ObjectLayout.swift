@@ -30,14 +30,16 @@ public struct ObjectLayout: Equatable, Hashable, Codable {
     
     private(set) var data: [[CGPoint]]
     
-    public subscript(position position: Position) -> CGPoint {
-        self[position.section][position.item]
-    }
-    
     // MARK: - Life Cycle
     
     public init(_ data: [[CGPoint]] = []) {
         self.data = data
+    }
+    
+    // MARK: - Utils
+    
+    public func item(at position: Position) -> CGPoint {
+        self[position.section][position.item]
     }
     
     // MARK: - Push

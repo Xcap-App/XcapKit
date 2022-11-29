@@ -211,7 +211,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
     
     open func point(with pointDescriptor: PointDescriptor) -> CGPoint {
         switch pointDescriptor {
-        case .item(let position):   return layout[position: position]
+        case .item(let position):   return layout.item(at: position)
         case .fixed(let point):     return point
         }
     }
@@ -268,7 +268,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
             return
         }
         
-        let currentPoint = layout[position: position]
+        let currentPoint = layout.item(at: position)
         let rotation = rotationAngle.radians
         var newLayout = layout
         
@@ -283,7 +283,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
                 let position = binding.position
                 let dx = line.dx * binding.offset.x
                 let dy = line.dy * binding.offset.y
-                let point = newLayout[position: position]
+                let point = newLayout.item(at: position)
                     .rotated(origin: center, angle: -rotation)
                     .applying(.init(translationX: dx, y: dy))
                     .rotated(origin: center, angle: rotation)
@@ -296,7 +296,7 @@ open class ObjectRenderer: NSObject, Codable, RedrawAndUndoController {
                 let position = binding.position
                 let dx = line.dx * binding.offset.x
                 let dy = line.dy * binding.offset.y
-                let point = newLayout[position: position]
+                let point = newLayout.item(at: position)
                     .applying(.init(translationX: dx, y: dy))
                 newLayout.update(point, at: position)
             }

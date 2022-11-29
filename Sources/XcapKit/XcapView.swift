@@ -1135,7 +1135,7 @@ extension XcapView {
         let location = convertLocation(fromViewToContent: location)
         let dx = location.x - lastLocation.x
         let dy = location.y - lastLocation.y
-        let newItem = object.layout[position: position]
+        let newItem = object.layout.item(at: position)
             .applying(.init(translationX: dx, y: dy))
         
         object.update(newItem, at: position)
@@ -1478,7 +1478,7 @@ extension XcapView {
                                  y: -offset.y * scaleFactor.y)
             let transform = CGAffineTransform.identity
                 .translatedBy(x: offset.x, y: offset.y)
-            let point = object.layout[position: position]
+            let point = object.layout.item(at: position)
                 .applying(transform)
             
             object.update(point, at: position)
