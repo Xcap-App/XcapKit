@@ -7,6 +7,15 @@
 
 import Foundation
 
+public enum UndoMode {
+    case disable
+    case enable(name: String?)
+}
+
+public protocol Undoable: AnyObject {
+    var undoMode: UndoMode { get set }
+}
+
 /// `Value` must be Objective-C compatible.
 @propertyWrapper
 public class Redrawable<Value>: RedrawableType, Undoable {

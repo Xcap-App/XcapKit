@@ -60,15 +60,17 @@ open class Plugin: NSObject, RedrawAndUndoController {
         fatalError("Must be implemented by subclasses.")
     }
     
+    open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
+        fatalError("Must be implemented by subclasses.")
+    }
+    
+    // MARK: - Observer
+    
     open func update(in xcapView: XcapView, state: State) {
         
     }
     
     // MARK: - Drawing
-    
-    open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
-        fatalError("Must be implemented by subclasses.")
-    }
     
     open func draw(in xcapView: XcapView, state: State, context: CGContext) {
         
