@@ -8,7 +8,7 @@
 import Foundation
 
 @propertyWrapper
-public final class Setting<Value>: SettingObservable {
+public final class Setting<Value>: SettingValueObservable {
     
     var valueDidUpdate: ((Any, Any) -> Void)?
     

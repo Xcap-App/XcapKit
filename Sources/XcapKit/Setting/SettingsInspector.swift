@@ -21,7 +21,7 @@ extension SettingsInspector {
     }
     
     func registerSettings(redrawHandler: @escaping () -> Void) {
-        let properties = Mirror(reflecting: self).properties(ofType: SettingObservable.self)
+        let properties = Mirror(reflecting: self).properties(ofType: SettingValueObservable.self)
         
         for (key, value) in properties {
             value.valueDidUpdate = { [weak self, weak value] (new: Any, old: Any) in
