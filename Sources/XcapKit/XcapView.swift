@@ -834,6 +834,8 @@ open class XcapView: PlatformView, SettingsInspector {
             return
         }
         
+        context.clip(to: contentRect)
+        
         drawBackground(context: context)
         drawObjects(context: context)
         drawPlugins(context: context)
@@ -852,7 +854,6 @@ open class XcapView: PlatformView, SettingsInspector {
         
         // End
         context.restoreGState()
-        context.clip(to: contentRect)
     }
     
     private func decoration(for object: ObjectRenderer, isSelected: Bool) -> ObjectDecoration {
@@ -894,7 +895,9 @@ open class XcapView: PlatformView, SettingsInspector {
                 drawObject(object, context: context)
             case let .items(position):
                 drawObject(object, context: context)
-                drawItems(for: object, highlightAt: position, context: context)
+                if let editable = object as? Editable {
+                    drawItems(for: editable, highlightAt: position, context: context)
+                }
             case let .boundingBox(highlight):
                 drawBoundingBox(for: object, highlight: highlight, context: context)
                 drawObject(object, context: context)
@@ -948,7 +951,7 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    private func drawItems(for object: ObjectRenderer, highlightAt highlightedPosition: ObjectLayout.Position?, context: CGContext) {
+    private func drawItems(for object: Editable, highlightAt highlightedPosition: ObjectLayout.Position?, context: CGContext) {
         // Start
         context.saveGState()
         
@@ -960,8 +963,14 @@ open class XcapView: PlatformView, SettingsInspector {
         
         for (i, items) in object.layout.enumerated() {
             for (j, item) in items.enumerated() {
+                let position = ObjectLayout.Position(item: j, section: i)
+                
+                guard object.canEditItem(at: position) else {
+                    continue
+                }
+                
                 let item = item.applying(itemTransform)
-                let shouldHighlight = highlightedPosition?.section == i && highlightedPosition?.item == j
+                let shouldHighlight = highlightedPosition == position
                 let strokeColor = shouldHighlight ? objectItemHighlightBorderColor : objectItemBorderColor
                 let fillColor = shouldHighlight ? objectItemHighlightFillColor : objectItemFillColor
                 

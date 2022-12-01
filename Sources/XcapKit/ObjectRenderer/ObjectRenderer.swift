@@ -456,31 +456,6 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
             : strategy.contains(.beforeFinishable)
     }
     
-    private func update() {
-        if shouldDraw(with: preliminaryGraphicsDrawingStrategy) {
-            preliminaryGraphics = makePreliminaryGraphics()
-        } else {
-            preliminaryGraphics.removeAll()
-        }
-        
-        if shouldDraw(with: mainGraphicsDrawingStrategy) {
-            let graphics = makeMainGraphics()
-            
-            mainGraphics = graphics
-            pathOfMainGraphics = graphics
-                .compactMap { $0 as? CGPathProvider }
-                .reduce(CGMutablePath()) { mutablePath, renderer in
-                    mutablePath.addPath(renderer.cgPath)
-                    return mutablePath
-                }
-        } else {
-            mainGraphics.removeAll()
-            pathOfMainGraphics = nil
-        }
-        
-        redrawHandler?()
-    }
-    
     open func makePreliminaryGraphics() -> [Drawable] {
         let lineDash = PathGraphicsRenderer.LineDash(phase: 4, lengths: [4])
         let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth, lineDash: lineDash)
@@ -512,13 +487,42 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         return [renderer]
     }
     
-    open func draw(context: CGContext) {
-        preliminaryGraphics.forEach { drawable in
-            drawable.draw(context: context)
+    open func update() {
+        if shouldDraw(with: preliminaryGraphicsDrawingStrategy) {
+            preliminaryGraphics = makePreliminaryGraphics()
+        } else {
+            preliminaryGraphics.removeAll()
         }
         
-        mainGraphics.forEach { drawable in
-            drawable.draw(context: context)
+        if shouldDraw(with: mainGraphicsDrawingStrategy) {
+            let graphics = makeMainGraphics()
+            
+            mainGraphics = graphics
+            pathOfMainGraphics = graphics
+                .compactMap { $0 as? CGPathProvider }
+                .reduce(CGMutablePath()) { mutablePath, renderer in
+                    mutablePath.addPath(renderer.cgPath)
+                    return mutablePath
+                }
+        } else {
+            mainGraphics.removeAll()
+            pathOfMainGraphics = nil
+        }
+        
+        redrawHandler?()
+    }
+    
+    open func draw(context: CGContext) {
+        for drawable in preliminaryGraphics + mainGraphics {
+            let builtIn = drawable is BasicGraphicsRenderer || drawable is PathGraphicsRenderer
+            
+            if builtIn {
+                drawable.draw(context: context)
+            } else {
+                context.saveGState()
+                drawable.draw(context: context)
+                context.restoreGState()
+            }
         }
     }
     
@@ -548,6 +552,9 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         rotationCenter  = try container.decodeIfPresent(PointDescriptor.self, forKey: .rotationCenter)
         rotationAngle   = try container.decode(Angle.self, forKey: .rotationAngle)
         isFinished      = try container.decode(Bool.self, forKey: .isFinished)
+        
+        layoutDidUpdate()
+        update()
     }
     
     open func encode(to encoder: Encoder) throws {
