@@ -76,8 +76,8 @@ final class ObjectRendererTests: XCTestCase {
         XCTAssertEqual(object.layout.data, [[CGPoint(x: 0, y: 0), CGPoint(x: 10, y: 10)]])
         
         let angle = Angle(degrees: 90)
-        object.setRotationCenter(.item(.zero), undoMode: .enable(name: nil))
-        object.rotate(angle: angle, undoMode: .enable(name: nil))
+        object.setRotationCenter(.item(.zero))
+        object.rotate(angle: angle)
         XCTAssertEqual(object.layout.data, [[.zero, .init(x: -10, y: 10)]])
     }
     

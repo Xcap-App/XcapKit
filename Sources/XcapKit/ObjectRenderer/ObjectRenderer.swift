@@ -315,13 +315,9 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     // MARK: - Rotate
     
     @discardableResult
-    open func setRotationCenter(_ center: PointDescriptor?, undoMode: UndoMode) -> Bool {
+    open func setRotationCenter(_ center: PointDescriptor?) -> Bool {
         guard isFinished || layoutAction.isFinishable else {
             return false
-        }
-        
-        if case .enable(let name) = undoMode {
-            registerUndoSetRotationCenter(rotationCenter, actionName: name)
         }
         
         rotationCenter = center
@@ -331,23 +327,8 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         return true
     }
     
-    private func registerUndoSetRotationCenter(_ center: PointDescriptor?, actionName: String?) {
-        guard let undoManager = undoManager else {
-            return
-        }
-        
-        undoManager.registerUndo(withTarget: self) { renderer in
-            renderer.registerUndoSetRotationCenter(renderer.rotationCenter, actionName: actionName)
-            renderer.setRotationCenter(center, undoMode: .enable(name: actionName))
-        }
-        
-        if let name = actionName {
-            undoManager.setActionName(name)
-        }
-    }
-    
     @discardableResult
-    open func rotate(angle: Angle, undoMode: UndoMode) -> Bool {
+    open func rotate(angle: Angle) -> Bool {
         guard isFinished || layoutAction.isFinishable else {
             return false
         }
@@ -368,29 +349,10 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
             }
         }
         
-        if case .enable(let name) = undoMode {
-            registerUndoRotate(angle: rotationAngle, actionName: name)
-        }
-        
         rotationAngle = angle
         layout = newLayout
         
         return true
-    }
-    
-    private func registerUndoRotate(angle: Angle, actionName: String?) {
-        guard let undoManager = undoManager else {
-            return
-        }
-        
-        undoManager.registerUndo(withTarget: self) { renderer in
-            renderer.registerUndoRotate(angle: renderer.rotationAngle, actionName: actionName)
-            renderer.rotate(angle: angle, undoMode: .enable(name: actionName))
-        }
-        
-        if let name = actionName {
-            undoManager.setActionName(name)
-        }
     }
     
     // MARK: - Transform
