@@ -20,3 +20,7 @@ public typealias PlatformColor      = UIColor
 public typealias PlatformView       = UIView
 public typealias PlatformBezierPath = UIBezierPath
 #endif
+
+func fatalErrorNoImplmentation() -> Never {
+    fatalError("Must be implemented by subclasses.")
+}

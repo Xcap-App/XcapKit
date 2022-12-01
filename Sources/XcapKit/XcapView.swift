@@ -471,6 +471,10 @@ open class XcapView: PlatformView, SettingsInspector {
         }
     }
     
+    /// Add plugin.
+    ///
+    /// - Parameters:
+    ///     - plugin: Must be subclass of `Plugin`.
     open func addPlugin(_ plugin: Plugin) {
         guard !plugins.contains(plugin) else {
             return
@@ -754,6 +758,12 @@ open class XcapView: PlatformView, SettingsInspector {
     
     // MARK: - Drawing Session
     
+    /**
+     Start drawing session.
+     
+     - Parameters:
+        - type: Must be type of subclass of `ObjectRenderer`.
+     */
     @discardableResult
     open func startDrawingSession<T: ObjectRenderer>(ofType type: T.Type) -> T {
         assertNonZeroContentSize()
@@ -910,18 +920,18 @@ open class XcapView: PlatformView, SettingsInspector {
     }
     
     private func drawBoundingBox(for object: ObjectRenderer, highlight: Bool, context: CGContext) {
+        guard let boundingBox = object.pathOfMainGraphics?.boundingBoxOfPath else {
+            return
+        }
+        
         // Start
         context.saveGState()
         
-        let scale = CGAffineTransform.identity
-            .scaledBy(x: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y)
-        let translate = CGAffineTransform.identity
-            .translatedBy(x: contentRect.origin.x, y: contentRect.origin.y)
         let borderColor = highlight ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
         let fillColor = highlight ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
-        var convertedBoundingBox = object.boundingBox
-            .applying(scale)
-            .applying(translate)
+        var convertedBoundingBox = boundingBox
+            .applying(.init(scaleX: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y))
+            .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
             .insetBy(dx: -selectionRange, dy: -selectionRange)
         
         convertedBoundingBox.origin.x = convertedBoundingBox.origin.x.rounded() + 0.5

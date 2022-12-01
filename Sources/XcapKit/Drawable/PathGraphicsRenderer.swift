@@ -75,7 +75,7 @@ extension PathGraphicsRenderer {
     
 }
 
-public class PathGraphicsRenderer: Drawable {
+public class PathGraphicsRenderer: Drawable, CGPathProvider {
     
     public let cgPath: CGPath
     

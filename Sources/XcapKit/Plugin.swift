@@ -34,7 +34,7 @@ open class Plugin: NSObject, SettingsInspector {
     // MARK: - Data
     
     open var priority: Priority {
-        fatalError("Must be implemented by subclasses.")
+        fatalErrorNoImplmentation()
     }
     
     // MARK: - Settings
@@ -55,11 +55,11 @@ open class Plugin: NSObject, SettingsInspector {
     // MARK: - Condition
     
     open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
-        fatalError("Must be implemented by subclasses.")
+        fatalErrorNoImplmentation()
     }
     
     open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
-        fatalError("Must be implemented by subclasses.")
+        fatalErrorNoImplmentation()
     }
     
     // MARK: - Observer

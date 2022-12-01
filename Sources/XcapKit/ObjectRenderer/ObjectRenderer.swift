@@ -75,6 +75,10 @@ extension ObjectRenderer {
             layout.first?.count != items ? .push(finishable: false) : .finish
         }
         
+        public static func singleContinuousSection(for layout: ObjectLayout) -> LayoutAction {
+            layout.isEmpty ? .push(finishable: false) : .continuousPushThenFinish
+        }
+        
     }
     
     public struct DrawingStrategy: OptionSet {
@@ -85,10 +89,10 @@ extension ObjectRenderer {
             self.rawValue = rawValue
         }
         
-        public static let finished      = DrawingStrategy(rawValue: 1 << 0)
-        public static let finishable    = DrawingStrategy(rawValue: 1 << 1)
-        public static let unfinished    = DrawingStrategy(rawValue: 1 << 2)
-        public static let always        = DrawingStrategy([.finished, .finishable, .unfinished])
+        public static let beforeFinishable  = DrawingStrategy(rawValue: 1 << 0)
+        public static let whenFinishable    = DrawingStrategy(rawValue: 1 << 1)
+        public static let whenFinished      = DrawingStrategy(rawValue: 1 << 2)
+        public static let always            = DrawingStrategy([.whenFinished, .whenFinishable, .beforeFinishable])
         
     }
     
@@ -129,15 +133,7 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     
     open private(set) var isFinished = false
     
-    open var boundingBox: CGRect {
-        makeMainGraphics()
-            .compactMap { $0 as? PathGraphicsRenderer }
-            .reduce(CGMutablePath()) { resultPath, pathDesc in
-                resultPath.addPath(pathDesc.cgPath)
-                return resultPath
-            }
-            .boundingBoxOfPath
-    }
+    open private(set) var pathOfMainGraphics: CGPath?
     
     // MARK: - Layout Control
     
@@ -145,18 +141,16 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         layout.isEmpty ? .push(finishable: false) : .continuousPushThenFinish
     }
     
+    open var preliminaryGraphicsDrawingStrategy: DrawingStrategy {
+        [.beforeFinishable, .whenFinishable]
+    }
+    
+    open var mainGraphicsDrawingStrategy: DrawingStrategy {
+        [.whenFinishable, .whenFinished]
+    }
+    
     open var itemBindings: [ObjectLayout.Position: [ItemBinding]] {
         [:]
-    }
-    
-    /// Default = `[.finishable, .unfinished]`
-    open var preliminaryGraphicsDrawingStrategy: DrawingStrategy {
-        [.finishable, .unfinished]
-    }
-    
-    /// Default = `[.finished, .finishable]`
-    open var mainGraphicsDrawingStrategy: DrawingStrategy {
-        [.finishable, .finished]
     }
     
     // MARK: - Settings
@@ -492,12 +486,12 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
             return true
         }
         guard !isFinished else {
-            return strategy.contains(.finished)
+            return strategy.contains(.whenFinished)
         }
         
         return layoutAction.isFinishable
-            ? strategy.contains(.finishable)
-            : strategy.contains(.unfinished)
+            ? strategy.contains(.whenFinishable)
+            : strategy.contains(.beforeFinishable)
     }
     
     private func update() {
@@ -508,9 +502,18 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         }
         
         if shouldDraw(with: mainGraphicsDrawingStrategy) {
-            mainGraphics = makeMainGraphics()
+            let graphics = makeMainGraphics()
+            
+            mainGraphics = graphics
+            pathOfMainGraphics = graphics
+                .compactMap { $0 as? CGPathProvider }
+                .reduce(CGMutablePath()) { mutablePath, renderer in
+                    mutablePath.addPath(renderer.cgPath)
+                    return mutablePath
+                }
         } else {
             mainGraphics.removeAll()
+            pathOfMainGraphics = nil
         }
         
         redrawHandler?()
@@ -562,8 +565,8 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     enum CodingKeys: String, CodingKey {
         case layout
         case lineWidth
-        case strokeColor
-        case fillColor
+        case strokeColor    // ObjectRenderer.Color
+        case fillColor      // ObjectRenderer.Color
         case rotationCenter
         case rotationAngle
         case isFinished
@@ -576,31 +579,22 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
         
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        layout = try container.decode(ObjectLayout.self, forKey: .layout)
-        lineWidth = try container.decode(CGFloat.self, forKey: .lineWidth)
-        
-        if let color = try container.decodeIfPresent(Color.self, forKey: .strokeColor) {
-            strokeColor = color.platformColor
-        }
-        
-        if let color = try container.decodeIfPresent(Color.self, forKey: .fillColor) {
-            fillColor = color.platformColor
-        }
-        
-        rotationCenter = try container.decodeIfPresent(PointDescriptor.self, forKey: .rotationCenter)
-        rotationAngle = try container.decode(Angle.self, forKey: .rotationAngle)
-        isFinished = try container.decode(Bool.self, forKey: .isFinished)
+        layout          = try container.decode(ObjectLayout.self, forKey: .layout)
+        lineWidth       = try container.decode(CGFloat.self, forKey: .lineWidth)
+        strokeColor     = try container.decodeIfPresent(Color.self, forKey: .strokeColor)?.platformColor ?? .black
+        fillColor       = try container.decodeIfPresent(Color.self, forKey: .fillColor)?.platformColor ?? .white
+        rotationCenter  = try container.decodeIfPresent(PointDescriptor.self, forKey: .rotationCenter)
+        rotationAngle   = try container.decode(Angle.self, forKey: .rotationAngle)
+        isFinished      = try container.decode(Bool.self, forKey: .isFinished)
     }
     
     open func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        let strokeColor = Color(color: strokeColor)
-        let fillColor = Color(color: fillColor)
         
         try container.encode(layout, forKey: .layout)
         try container.encode(lineWidth, forKey: .lineWidth)
-        try container.encodeIfPresent(strokeColor, forKey: .strokeColor)
-        try container.encodeIfPresent(fillColor, forKey: .fillColor)
+        try container.encodeIfPresent(Color(color: strokeColor), forKey: .strokeColor)
+        try container.encodeIfPresent(Color(color: fillColor), forKey: .fillColor)
         try container.encodeIfPresent(rotationCenter, forKey: .rotationCenter)
         try container.encode(rotationAngle, forKey: .rotationAngle)
         try container.encode(isFinished, forKey: .isFinished)
