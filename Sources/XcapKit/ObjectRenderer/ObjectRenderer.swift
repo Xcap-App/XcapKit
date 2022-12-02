@@ -71,12 +71,27 @@ extension ObjectRenderer {
             }
         }
         
-        public static func singleSection(withNumberOfItems items: Int, for layout: ObjectLayout) -> LayoutAction {
-            layout.first?.count != items ? .push(finishable: false) : .finish
+        public static func singleSection(items: Int, for layout: ObjectLayout) -> LayoutAction {
+            assert(items > 0, "⚠️ `items` must greater than 0.")
+            
+            return layout.first?.count != items ? .push(finishable: false) : .finish
         }
         
         public static func singleContinuousSection(for layout: ObjectLayout) -> LayoutAction {
             layout.isEmpty ? .push(finishable: false) : .continuousPushThenFinish
+        }
+        
+        public static func multipleSections(_ sections: [Int], for layout: ObjectLayout) -> LayoutAction {
+            assert(!sections.isEmpty, "⚠️ `sections` must not be empty.")
+            assert(!sections.contains(where: { $0 <= 0 }), "⚠️ elements in `sections` must be greater than 0.")
+            
+            if sections == layout.map(\.count) {
+                return .finish
+            } else if layout.isEmpty || layout.last?.count == sections[layout.count - 1] {
+                return .pushSection(finishable: false)
+            } else {
+                return .push(finishable: false)
+            }
         }
         
     }
@@ -116,7 +131,7 @@ extension ObjectRenderer {
 }
 
 @objcMembers
-open class ObjectRenderer: NSObject, Codable, SettingsInspector {
+open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     
     private var preliminaryGraphics: [Drawable] = []
     
@@ -138,7 +153,7 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     // MARK: - Layout Control
     
     open var layoutAction: LayoutAction {
-        layout.isEmpty ? .push(finishable: false) : .continuousPushThenFinish
+        .singleContinuousSection(for: layout)
     }
     
     open var preliminaryGraphicsDrawingStrategy: DrawingStrategy {
@@ -426,11 +441,12 @@ open class ObjectRenderer: NSObject, Codable, SettingsInspector {
     // MARK: - Selection
     
     open func selectionTest(point: CGPoint, range: CGFloat) -> Bool {
-        mainGraphics
-            .compactMap { $0 as? PathGraphicsRenderer }
-            .contains { pathBursh in
-                pathBursh.contains(point: point, range: range)
+        mainGraphics.contains { drawable in
+            guard let pathRenderer = drawable as? PathGraphicsRenderer else {
+                return false
             }
+            return pathRenderer.contains(point: point, range: range)
+        }
     }
     
     open func selectionTest(rect: CGRect) -> Bool {

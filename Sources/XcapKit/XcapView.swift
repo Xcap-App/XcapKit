@@ -79,8 +79,8 @@ extension XcapView {
     
     private enum ObjectDecoration {
         case none
-        case items(ObjectLayout.Position?)
-        case boundingBox(Bool)
+        case items(Editable, highlightedPosition: ObjectLayout.Position?)
+        case boundingBox(ObjectRenderer, highlighted: Bool)
     }
     
     // ----- Public -----
@@ -861,23 +861,27 @@ open class XcapView: PlatformView, SettingsInspector {
             return .none
         }
         
-        if object is Editable {
+        if let object = object as? Editable {
             switch internalState {
             case .editing, .moving:
                 return .none
+                
             case let .onItem(anObject, position, _):
-                return .items(anObject == object ? position : nil)
+                return .items(object, highlightedPosition: anObject == object ? position : nil)
+                
             default:
-                return .items(nil)
+                return .items(object, highlightedPosition: nil)
             }
         } else {
             switch internalState {
             case .editing, .moving:
                 return .none
+                
             case let .onObject(anObject, _, _):
-                return .boundingBox(anObject == object)
+                return .boundingBox(object, highlighted: anObject == object)
+                
             default:
-                return .boundingBox(false)
+                return .boundingBox(object, highlighted: false)
             }
         }
     }
@@ -893,13 +897,17 @@ open class XcapView: PlatformView, SettingsInspector {
             switch decoration {
             case .none:
                 drawObject(object, context: context)
-            case let .items(position):
+                
+            case let .items(object, position):
                 drawObject(object, context: context)
-                if let editable = object as? Editable {
-                    drawItems(for: editable, highlightAt: position, context: context)
+                drawItems(for: object, highlightedPosition: position, context: context)
+                
+            case let .boundingBox(object, highlighted):
+                if let boundingBox = object.pathOfMainGraphics?.boundingBoxOfPath {
+                    context.saveGState()
+                    drawBoundingBox(boundingBox, highlighted: highlighted, context: context)
+                    context.restoreGState()
                 }
-            case let .boundingBox(highlight):
-                drawBoundingBox(for: object, highlight: highlight, context: context)
                 drawObject(object, context: context)
             }
         }
@@ -922,16 +930,9 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    private func drawBoundingBox(for object: ObjectRenderer, highlight: Bool, context: CGContext) {
-        guard let boundingBox = object.pathOfMainGraphics?.boundingBoxOfPath else {
-            return
-        }
-        
-        // Start
-        context.saveGState()
-        
-        let borderColor = highlight ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
-        let fillColor = highlight ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
+    open func drawBoundingBox(_ boundingBox: CGRect, highlighted: Bool, context: CGContext) {
+        let borderColor = highlighted ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
+        let fillColor = highlighted ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
         var convertedBoundingBox = boundingBox
             .applying(.init(scaleX: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y))
             .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
@@ -946,12 +947,9 @@ open class XcapView: PlatformView, SettingsInspector {
         context.setStrokeColor(borderColor.cgColor)
         context.addRect(convertedBoundingBox)
         context.drawPath(using: .fillStroke)
-        
-        // End
-        context.restoreGState()
     }
     
-    private func drawItems(for object: Editable, highlightAt highlightedPosition: ObjectLayout.Position?, context: CGContext) {
+    private func drawItems(for object: Editable, highlightedPosition: ObjectLayout.Position?, context: CGContext) {
         // Start
         context.saveGState()
         
@@ -970,20 +968,27 @@ open class XcapView: PlatformView, SettingsInspector {
                 }
                 
                 let item = item.applying(itemTransform)
-                let shouldHighlight = highlightedPosition == position
-                let strokeColor = shouldHighlight ? objectItemHighlightBorderColor : objectItemBorderColor
-                let fillColor = shouldHighlight ? objectItemHighlightFillColor : objectItemFillColor
+                let highlighted = highlightedPosition == position
                 
-                context.setStrokeColor(strokeColor.cgColor)
-                context.setFillColor(fillColor.cgColor)
-                
-                context.addArc(center: item, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
-                context.drawPath(using: .fillStroke)
+                context.saveGState()
+                drawItem(item, highlighted: highlighted, context: context)
+                context.restoreGState()
             }
         }
         
         // End
         context.restoreGState()
+    }
+    
+    open func drawItem(_ point: CGPoint, highlighted: Bool, context: CGContext) {
+        let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
+        let fillColor = highlighted ? objectItemHighlightFillColor : objectItemFillColor
+        
+        context.setStrokeColor(strokeColor.cgColor)
+        context.setFillColor(fillColor.cgColor)
+        
+        context.addArc(center: point, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+        context.drawPath(using: .fillStroke)
     }
     
     private func drawPlugins(context: CGContext) {
@@ -1285,7 +1290,6 @@ extension XcapView {
         case .push:
             if sessionState != .tracking {
                 object.push(location)
-                object.push(location)
                 internalState = .drawing(object: object, state: .pressing)
             } else {
                 object.updateLast(location)
@@ -1294,7 +1298,6 @@ extension XcapView {
         case .pushSection:
             if sessionState != .tracking {
                 object.pushSection(location)
-                object.push(location)
                 internalState = .drawing(object: object, state: .pressing)
             } else {
                 object.updateLast(location)
@@ -1313,6 +1316,7 @@ extension XcapView {
     
     private func drawing(_ object: ObjectRenderer, didMoveTo location: CGPoint, sessionState: DrawingSessionState) {
         let location = convertLocation(fromViewToContent: location)
+        let action = object.layoutAction
         
         switch object.layoutAction {
         case .continuousPush, .continuousPushThenFinish:
@@ -1320,6 +1324,9 @@ extension XcapView {
             internalState = .drawing(object: object, state: .moving)
             
         case .push, .pushSection, .finish:
+            if object.layout.last?.count == 1, case .push = action {
+                object.push(location)
+            }
             object.updateLast(location)
             internalState = .drawing(object: object, state: .moving)
         }
@@ -1355,6 +1362,9 @@ extension XcapView {
         case .push, .pushSection, .finish:
             switch sessionState {
             case .pressing:
+                if object.layout.last?.count == 1, case .push = action {
+                    object.push(location)
+                }
                 internalState = .drawing(object: object, state: .tracking)
                 
             case .tracking:

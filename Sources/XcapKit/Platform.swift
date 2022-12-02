@@ -13,14 +13,16 @@ import UIKit
 
 #if os(macOS)
 public typealias PlatformColor      = NSColor
-public typealias PlatformView       = NSView
 public typealias PlatformBezierPath = NSBezierPath
+public typealias PlatformImage      = NSImage
+public typealias PlatformView       = NSView
 #else
 public typealias PlatformColor      = UIColor
-public typealias PlatformView       = UIView
 public typealias PlatformBezierPath = UIBezierPath
+public typealias PlatformImage      = UIImage
+public typealias PlatformView       = UIView
 #endif
 
 func fatalErrorNoImplmentation() -> Never {
-    fatalError("Must be implemented by subclasses.")
+    fatalError("⚠️ Must be implemented by subclasses.")
 }
