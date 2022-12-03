@@ -480,12 +480,13 @@ open class XcapView: PlatformView, SettingsInspector {
             return
         }
         
+        plugins.append(plugin)
+        
         plugin.redrawHandler = { [weak self] in
             self?.redraw()
         }
         plugin.undoManager = undoManager
-        
-        plugins.append(plugin)
+        plugin.pluginDidAdd(to: self)
         
         redraw()
     }
@@ -504,6 +505,7 @@ open class XcapView: PlatformView, SettingsInspector {
         
         plugin.redrawHandler = nil
         plugin.undoManager = nil
+        plugin.remove(from: self)
         
         redraw()
     }

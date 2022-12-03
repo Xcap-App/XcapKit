@@ -64,6 +64,14 @@ open class Plugin: NSObject, SettingsInspector {
     
     // MARK: - Observer
     
+    open func pluginDidAdd(to xcapView: XcapView) {
+        
+    }
+    
+    open func remove(from xcapView: XcapView) {
+        
+    }
+    
     open func update(in xcapView: XcapView, state: State) {
         
     }
