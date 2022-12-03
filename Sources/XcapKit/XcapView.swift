@@ -53,7 +53,7 @@ extension XcapViewDelegate {
 
 @objc public protocol XcapViewDrawingDelegate: NSObjectProtocol {
     @objc optional func xcapView(_ xcapView: XcapView, drawBoundingBox boundingBox: CGRect, highlighted: Bool, context: CGContext)
-    @objc optional func xcapView(_ xcapView: XcapView, drawItem item: CGPoint, highlighted: Bool, context: CGContext)
+    @objc optional func xcapView(_ xcapView: XcapView, drawItemAt point: CGPoint, highlighted: Bool, context: CGContext)
 }
 
 extension XcapView {
@@ -108,6 +108,11 @@ extension XcapView {
         case removeObject
         case draging
         case editing
+    }
+    
+    public enum ItemSelectionMode {
+        case circle
+        case rectangle
     }
     
 }
@@ -180,6 +185,9 @@ open class XcapView: PlatformView, SettingsInspector {
     
     @Setting
     dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
+    
+    @Setting
+    dynamic open var itemSelectionMode: ItemSelectionMode = .circle
     
     // ----- Drawing Session Settings -----
     
@@ -444,8 +452,8 @@ open class XcapView: PlatformView, SettingsInspector {
         let scale = CGAffineTransform.identity
             .scaledBy(x: contentScaleFactors.toContent.x, y: contentScaleFactors.toContent.y)
         return rect
-            .applying(scale)
             .applying(translate)
+            .applying(scale)
     }
     
     // MARK: - Object Finder
@@ -479,12 +487,25 @@ open class XcapView: PlatformView, SettingsInspector {
             
             for (i, items) in object.layout.reversed().enumerated() {
                 for (j, item) in items.reversed().enumerated() {
-                    let rangeCircle = Circle(center: item, radius: convertedSelectionRange)
                     let position = ObjectLayout.Position(item: items.count - j - 1,
                                                          section: object.layout.count - i - 1)
                     
-                    if rangeCircle.contains(location) && object.canEditItem(at: position) {
-                        return (object, position)
+                    switch itemSelectionMode {
+                    case .circle:
+                        let rangeCircle = Circle(center: item, radius: convertedSelectionRange)
+                        
+                        if rangeCircle.contains(location) && object.canEditItem(at: position) {
+                            return (object, position)
+                        }
+                        
+                    case .rectangle:
+                        let origin = CGPoint(x: item.x - convertedSelectionRange, y: item.y - convertedSelectionRange)
+                        let size = CGSize(width: convertedSelectionRange * 2, height: convertedSelectionRange * 2)
+                        let rect = CGRect(origin: origin, size: size)
+                        
+                        if rect.contains(location) {
+                            return (object, position)
+                        }
                     }
                 }
             }
@@ -1020,10 +1041,10 @@ open class XcapView: PlatformView, SettingsInspector {
                     continue
                 }
                 
-                let item = item.applying(itemTransform)
+                let point = item.applying(itemTransform)
                 let highlighted = highlightedPosition == position
                 
-                drawItem(item, highlighted: highlighted, context: context)
+                drawItem(at: point, highlighted: highlighted, context: context)
             }
         }
         
@@ -1031,12 +1052,12 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    private func drawItem(_ item: CGPoint, highlighted: Bool, context: CGContext) {
-        lazy var sel = #selector(XcapViewDrawingDelegate.xcapView(_:drawItem:highlighted:context:))
+    private func drawItem(at point: CGPoint, highlighted: Bool, context: CGContext) {
+        lazy var sel = #selector(XcapViewDrawingDelegate.xcapView(_:drawItemAt:highlighted:context:))
         
         if let delegate = drawingDelegate, delegate.responds(to: sel) {
             context.saveGState()
-            drawingDelegate?.xcapView?(self, drawItem: item, highlighted: highlighted, context: context)
+            drawingDelegate?.xcapView?(self, drawItemAt: point, highlighted: highlighted, context: context)
             context.restoreGState()
         } else {
             let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
@@ -1045,7 +1066,7 @@ open class XcapView: PlatformView, SettingsInspector {
             context.setStrokeColor(strokeColor.cgColor)
             context.setFillColor(fillColor.cgColor)
             
-            context.addArc(center: item, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+            context.addArc(center: point, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
             context.drawPath(using: .fillStroke)
         }
     }
