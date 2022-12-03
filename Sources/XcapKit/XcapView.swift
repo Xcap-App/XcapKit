@@ -51,6 +51,11 @@ extension XcapViewDelegate {
     #endif
 }
 
+@objc public protocol XcapViewDrawingDelegate: NSObjectProtocol {
+    @objc optional func xcapView(_ xcapView: XcapView, drawBoundingBox boundingBox: CGRect, highlighted: Bool, context: CGContext)
+    @objc optional func xcapView(_ xcapView: XcapView, drawItem item: CGPoint, highlighted: Bool, context: CGContext)
+}
+
 extension XcapView {
     
     // ----- Private -----
@@ -149,6 +154,8 @@ open class XcapView: PlatformView, SettingsInspector {
     
     open weak var delegate: XcapViewDelegate?
     
+    open weak var drawingDelegate: XcapViewDrawingDelegate?
+    
     // ----- Content Settings -----
     
     @objc dynamic open var contentSize = CGSize.zero {
@@ -164,6 +171,9 @@ open class XcapView: PlatformView, SettingsInspector {
     dynamic open var selectionRange: CGFloat = 10 {
         didSet { updateContentInfo() }
     }
+    
+    @Setting
+    dynamic open var selectionRectCornerRadius: CGFloat = 0
     
     @Setting
     dynamic open var selectionRectBorderColor: PlatformColor = .lightGray
@@ -203,6 +213,9 @@ open class XcapView: PlatformView, SettingsInspector {
     }()
     
     // ----- Object Bounding Box Settings -----
+    
+    @Setting
+    dynamic open var objectBoundingBoxCornerRadius: CGFloat = 4
     
     @Setting
     dynamic open var objectBoundingBoxBorderColor: PlatformColor = .black
@@ -413,6 +426,26 @@ open class XcapView: PlatformView, SettingsInspector {
         return location
             .applying(translate)
             .applying(scale)
+    }
+    
+    open func convertRect(fromContentToView rect: CGRect) -> CGRect {
+        let scale = CGAffineTransform.identity
+            .scaledBy(x: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y)
+        let translate = CGAffineTransform.identity
+            .translatedBy(x: contentRect.origin.x, y: contentRect.origin.y)
+        return rect
+            .applying(scale)
+            .applying(translate)
+    }
+    
+    open func convertRect(fromViewToContent rect: CGRect) -> CGRect {
+        let translate = CGAffineTransform.identity
+            .translatedBy(x: -contentRect.origin.x, y: -contentRect.origin.y)
+        let scale = CGAffineTransform.identity
+            .scaledBy(x: contentScaleFactors.toContent.x, y: contentScaleFactors.toContent.y)
+        return rect
+            .applying(scale)
+            .applying(translate)
     }
     
     // MARK: - Object Finder
@@ -906,9 +939,7 @@ open class XcapView: PlatformView, SettingsInspector {
                 
             case let .boundingBox(object, highlighted):
                 if let boundingBox = object.pathOfMainGraphics?.boundingBoxOfPath {
-                    context.saveGState()
                     drawBoundingBox(boundingBox, highlighted: highlighted, context: context)
-                    context.restoreGState()
                 }
                 drawObject(object, context: context)
             }
@@ -932,23 +963,43 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    open func drawBoundingBox(_ boundingBox: CGRect, highlighted: Bool, context: CGContext) {
-        let borderColor = highlighted ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
-        let fillColor = highlighted ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
-        var convertedBoundingBox = boundingBox
-            .applying(.init(scaleX: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y))
-            .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
-            .insetBy(dx: -selectionRange, dy: -selectionRange)
+    private func drawBoundingBox(_ boundingBox: CGRect, highlighted: Bool, context: CGContext) {
+        lazy var sel = #selector(XcapViewDrawingDelegate.xcapView(_:drawBoundingBox:highlighted:context:))
         
-        convertedBoundingBox.origin.x = convertedBoundingBox.origin.x.rounded() + 0.5
-        convertedBoundingBox.origin.y = convertedBoundingBox.origin.y.rounded() + 0.5
-        convertedBoundingBox.size.width.round()
-        convertedBoundingBox.size.height.round()
-        
-        context.setFillColor(fillColor.cgColor)
-        context.setStrokeColor(borderColor.cgColor)
-        context.addRect(convertedBoundingBox)
-        context.drawPath(using: .fillStroke)
+        if let delegate = drawingDelegate, delegate.responds(to: sel) {
+            let boundingBox = convertRect(fromContentToView: boundingBox)
+            context.saveGState()
+            delegate.xcapView?(self, drawBoundingBox: boundingBox, highlighted: highlighted, context: context)
+            context.restoreGState()
+        } else {
+            // Start
+            context.saveGState()
+            
+            let borderColor = highlighted ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
+            let fillColor = highlighted ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
+            let convertedBoundingBox: CGRect = {
+                var rect = convertRect(fromContentToView: boundingBox)
+                    .insetBy(dx: -selectionRange, dy: -selectionRange)
+                rect.origin.x = rect.origin.x.rounded() + 0.5
+                rect.origin.y = rect.origin.y.rounded() + 0.5
+                rect.size.width.round()
+                rect.size.height.round()
+                return rect
+            }()
+            
+            let path = CGPath(roundedRect: convertedBoundingBox,
+                              cornerWidth: objectBoundingBoxCornerRadius,
+                              cornerHeight: objectBoundingBoxCornerRadius,
+                              transform: nil)
+            
+            context.setFillColor(fillColor.cgColor)
+            context.setStrokeColor(borderColor.cgColor)
+            context.addPath(path)
+            context.drawPath(using: .fillStroke)
+            
+            // End
+            context.restoreGState()
+        }
     }
     
     private func drawItems(for object: Editable, highlightedPosition: ObjectLayout.Position?, context: CGContext) {
@@ -972,9 +1023,7 @@ open class XcapView: PlatformView, SettingsInspector {
                 let item = item.applying(itemTransform)
                 let highlighted = highlightedPosition == position
                 
-                context.saveGState()
                 drawItem(item, highlighted: highlighted, context: context)
-                context.restoreGState()
             }
         }
         
@@ -982,15 +1031,23 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    open func drawItem(_ point: CGPoint, highlighted: Bool, context: CGContext) {
-        let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
-        let fillColor = highlighted ? objectItemHighlightFillColor : objectItemFillColor
+    private func drawItem(_ item: CGPoint, highlighted: Bool, context: CGContext) {
+        lazy var sel = #selector(XcapViewDrawingDelegate.xcapView(_:drawItem:highlighted:context:))
         
-        context.setStrokeColor(strokeColor.cgColor)
-        context.setFillColor(fillColor.cgColor)
-        
-        context.addArc(center: point, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
-        context.drawPath(using: .fillStroke)
+        if let delegate = drawingDelegate, delegate.responds(to: sel) {
+            context.saveGState()
+            drawingDelegate?.xcapView?(self, drawItem: item, highlighted: highlighted, context: context)
+            context.restoreGState()
+        } else {
+            let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
+            let fillColor = highlighted ? objectItemHighlightFillColor : objectItemFillColor
+            
+            context.setStrokeColor(strokeColor.cgColor)
+            context.setFillColor(fillColor.cgColor)
+            
+            context.addArc(center: item, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+            context.drawPath(using: .fillStroke)
+        }
     }
     
     private func drawPlugins(context: CGContext) {
@@ -1015,9 +1072,14 @@ open class XcapView: PlatformView, SettingsInspector {
         // Start
         context.saveGState()
         
+        let path = CGPath(roundedRect: rect,
+                          cornerWidth: selectionRectCornerRadius,
+                          cornerHeight: selectionRectCornerRadius,
+                          transform: nil)
+        
         context.setFillColor(selectionRectFillColor.cgColor)
         context.setStrokeColor(selectionRectBorderColor.cgColor)
-        context.addRect(rect)
+        context.addPath(path)
         context.drawPath(using: .fillStroke)
         
         // End
