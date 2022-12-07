@@ -178,7 +178,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     /// Default = 0 Degrees
     ///
     /// Setter: ``rotate(angle:)``
-    open private(set) var rotationAngle = Angle(radians: 0)
+    open private(set) var rotationAngle = Angle.radians(0)
     
     /// Default = Black
     @Setting

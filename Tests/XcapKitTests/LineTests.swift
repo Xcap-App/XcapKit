@@ -25,7 +25,7 @@ class LineTests: XCTestCase {
         XCTAssertEqual(line1.dx, 10)
         XCTAssertEqual(line1.dy, 10)
         XCTAssertEqual(line1.mid, .init(x: 5, y: 5))
-        XCTAssertEqual(Angle(radians: line1.angle), Angle(degrees: 45))
+        XCTAssertEqual(Angle.radians(line1.angle), Angle.degrees(45))
     }
     
     func testLine_contains() {
@@ -37,7 +37,7 @@ class LineTests: XCTestCase {
     func testLine_rotated() {
         var line = Line(start: .zero, end: CGPoint(x: 10, y: 0))
         
-        line.rotate(angle: Angle(degrees: 90))
+        line.rotate(angle: Angle.degrees(90))
         
         XCTAssertEqual(line.start, .zero)
         XCTAssertLessThan(line.end.x, 1e-5)

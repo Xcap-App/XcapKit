@@ -13,6 +13,14 @@ public struct Angle: Equatable, Hashable, Codable {
         lhs.radians == rhs.radians
     }
     
+    public static func degrees(_ degrees: CGFloat) -> Angle {
+        .init(degrees: degrees)
+    }
+    
+    public static func radians(_ radians: CGFloat) -> Angle {
+        .init(radians: radians)
+    }
+    
     public let radians: CGFloat
     
     public let degrees: CGFloat
