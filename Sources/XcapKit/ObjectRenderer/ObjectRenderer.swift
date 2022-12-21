@@ -435,6 +435,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
         
         isFinished = true
         
+        layoutDidUpdate()
         update()
     }
     
