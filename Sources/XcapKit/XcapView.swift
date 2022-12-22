@@ -647,6 +647,14 @@ open class XcapView: PlatformView, SettingsInspector {
     #endif
     
     #if os(macOS)
+    open override func rightMouseUp(with event: NSEvent) {
+        super.rightMouseUp(with: event)
+        
+        if event.clickCount == 1, case .drawing = state {
+            finishDrawingSession()
+        }
+    }
+    
     open override func menu(for event: NSEvent) -> NSMenu? {
         guard window?.isKeyWindow == true,
               event.type == .rightMouseDown,
