@@ -29,6 +29,8 @@ extension Plugin {
 @objcMembers
 open class Plugin: NSObject, SettingsInspector {
     
+    var undoManager: UndoManager?
+    
     var redrawHandler: (() -> Void)?
     
     // MARK: - Data

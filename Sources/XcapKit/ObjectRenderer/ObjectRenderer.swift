@@ -62,8 +62,10 @@ extension ObjectRenderer {
         
         var isFinishable: Bool {
             switch self {
-            case .push(let finishable): fallthrough
-            case .pushSection(let finishable): fallthrough
+            case .push(let finishable):
+                fallthrough
+            case .pushSection(let finishable):
+                fallthrough
             case .continuousPush(let finishable):
                 return finishable
             case .continuousPushThenFinish, .finish:
@@ -136,6 +138,8 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     private var preliminaryGraphics: [Drawable] = []
     
     private var mainGraphics: [Drawable] = []
+    
+    var undoManager: UndoManager?
     
     // MARK: - Data
     

@@ -8,17 +8,12 @@
 import Foundation
 
 protocol SettingsInspector: NSObject {
-    
+    var undoManager: UndoManager? { get }
 }
 
 private var kUndoManagerAssociation: UInt8 = 0
 
 extension SettingsInspector {
-    
-    var undoManager: UndoManager? {
-        get { objc_getAssociatedObject(self, &kUndoManagerAssociation) as? UndoManager }
-        set { objc_setAssociatedObject(self, &kUndoManagerAssociation, newValue, .OBJC_ASSOCIATION_RETAIN) }
-    }
     
     func registerSettings(redrawHandler: @escaping () -> Void) {
         let properties = Mirror(reflecting: self).properties(ofType: SettingValueObservable.self)

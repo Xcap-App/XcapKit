@@ -12,6 +12,6 @@ import Quartz
 import QuartzCore
 #endif
 
-public protocol CGPathProvider {
+public protocol CGPathProvider: Drawable {
     var cgPath: CGPath { get }
 }
