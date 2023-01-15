@@ -60,7 +60,7 @@ extension ObjectRenderer {
         case continuousPushThenFinish
         case finish
         
-        var isFinishable: Bool {
+        public var isFinishable: Bool {
             switch self {
             case .push(let finishable):
                 fallthrough
