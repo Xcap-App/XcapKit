@@ -48,7 +48,7 @@ public struct Line: Equatable, Hashable, Codable {
         self.end = end
     }
     
-    func intersection(with line: Line) -> Intersection {
+    public func intersection(with line: Line) -> Intersection {
         func EQ(x: CGFloat, y: CGFloat) -> Bool {
             let EPS: CGFloat = 1e-5
             return abs(x - y) < EPS
