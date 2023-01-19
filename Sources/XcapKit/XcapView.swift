@@ -1091,7 +1091,15 @@ open class XcapView: PlatformView, SettingsInspector {
             
             if plugin.shouldDraw(in: self, state: pluginState) {
                 context.saveGState()
+                
+                if plugin.drawingMode == .toContent {
+                    context.translateBy(x: contentRect.origin.x, y: contentRect.origin.y)
+                    context.scaleBy(x: contentScaleFactors.toView.x, y: contentScaleFactors.toView.y)
+                    plugin.draw(in: self, state: pluginState, context: context)
+                }
+                
                 plugin.draw(in: self, state: pluginState, context: context)
+                
                 context.restoreGState()
             }
         }

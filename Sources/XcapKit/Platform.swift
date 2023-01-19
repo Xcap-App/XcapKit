@@ -22,7 +22,3 @@ public typealias PlatformBezierPath = UIBezierPath
 public typealias PlatformImage      = UIImage
 public typealias PlatformView       = UIView
 #endif
-
-func fatalErrorNoImplmentation() -> Never {
-    fatalError("⚠️ Must be implemented by subclasses.")
-}

@@ -15,6 +15,7 @@ extension Plugin {
     public enum Priority {
         case high
         case low
+        case overlay
     }
     
     public enum State {
@@ -22,6 +23,11 @@ extension Plugin {
         case began(location: CGPoint)
         case moved(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
         case ended(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
+    }
+    
+    public enum DrawingMode {
+        case toContent
+        case toView
     }
     
 }
@@ -36,7 +42,11 @@ open class Plugin: NSObject, SettingsInspector {
     // MARK: - Data
     
     open var priority: Priority {
-        fatalErrorNoImplmentation()
+        .high
+    }
+    
+    open var drawingMode: DrawingMode {
+        .toContent
     }
     
     // MARK: - Settings
@@ -57,11 +67,11 @@ open class Plugin: NSObject, SettingsInspector {
     // MARK: - Condition
     
     open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
-        fatalErrorNoImplmentation()
+        false
     }
     
     open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
-        fatalErrorNoImplmentation()
+        true
     }
     
     // MARK: - Observer
