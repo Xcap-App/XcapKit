@@ -11,8 +11,6 @@ public struct Arc: Equatable, Hashable, Codable {
     
     public var center: CGPoint
     
-    public var radius: CGFloat
-    
     public var start: CGFloat
     
     public var end: CGFloat
@@ -20,35 +18,59 @@ public struct Arc: Equatable, Hashable, Codable {
     public var clockwise: Bool
     
     public var angle: CGFloat {
-        let (start, end, clockwise) = transformed()
+        var start = normalizeAngle(start)
+        var end = normalizeAngle(end)
         
-        return clockwise
-            ? end - start
-            : .pi * 2 - (end - start)
+        if !clockwise {
+            swap(&start, &end)
+        }
+        
+        if start >= end {
+            return start - end
+        } else {
+            return .pi * 2 - (end - start)
+        }
     }
     
-    public init(center: CGPoint, radius: CGFloat, start: CGFloat, end: CGFloat, clockwise: Bool) {
+    // Always clockwise.
+    public init(center: CGPoint, start: CGFloat, end: CGFloat, clockwise: Bool) {
         self.center = center
-        self.radius = radius
         self.start = start
         self.end = end
         self.clockwise = clockwise
     }
     
-    public init(vertex: CGPoint, radius: CGFloat, point1: CGPoint, point2: CGPoint) {
-        let line1 = Line(start: vertex, end: point1)
-        let line2 = Line(start: vertex, end: point2)
+    public init(center: CGPoint, startPoint: CGPoint, endPoint: CGPoint) {
+        let start = Line(start: center, end: startPoint).angle
+        let end = Line(start: center, end: endPoint).angle
         
-        self.init(center: vertex,
-                  radius: radius,
-                  start: line1.angle,
-                  end: line2.angle,
-                  clockwise: true)
-        
-        clockwise = angle <= .pi
+        self.init(
+            center: center,
+            start: start,
+            end: end,
+            clockwise: true
+        )
     }
     
-    private func normalizedAngle(_ angle: CGFloat) -> CGFloat {
+    public func toMajorArc() -> Arc {
+        guard angle < .pi else {
+            return self
+        }
+        var arc = self
+        arc.clockwise.toggle()
+        return arc
+    }
+    
+    public func toMinorArc() -> Arc {
+        guard angle > .pi else {
+            return self
+        }
+        var arc = self
+        arc.clockwise.toggle()
+        return arc
+    }
+    
+    private func normalizeAngle(_ angle: CGFloat) -> CGFloat {
         let cirRad = CGFloat.pi * 2
         let angle = angle.truncatingRemainder(dividingBy: cirRad)
         
@@ -57,25 +79,23 @@ public struct Arc: Equatable, Hashable, Codable {
             : cirRad + angle
     }
     
-    private func transformed() -> (start: CGFloat, end: CGFloat, clockwise: Bool) {
-        let start = normalizedAngle(start)
-        let end = normalizedAngle(end)
-        
-        return start > end
-            ? (end, start, !clockwise)
-            : (start, end, clockwise)
-    }
-    
     public func contains(_ angle: CGFloat) -> Bool {
-        let target = normalizedAngle(angle)
-        let (start, end, clockwise) = transformed()
+        let target = normalizeAngle(angle)
+        var start = normalizeAngle(start)
+        var end = normalizeAngle(end)
+        var clockwise = clockwise
         
-        return clockwise
+        if start > end {
+            swap(&start, &end)
+            clockwise.toggle()
+        }
+        
+        return !clockwise
             ? (start...end).contains(target)
             : target <= start || target >= end
     }
     
-    public func contains(_ point: CGPoint) -> Bool {
+    public func contains(_ point: CGPoint, radius: CGFloat) -> Bool {
         let line = Line(start: center, end: point)
         
         return line.distance <= radius && contains(line.angle)

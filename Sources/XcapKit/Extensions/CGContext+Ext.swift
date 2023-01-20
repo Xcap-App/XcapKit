@@ -25,11 +25,11 @@ extension CGContext {
         addLines(between: [line.start, line.end])
     }
     
-    public func addArc(_ arc: Arc) {
-        let origin = arc.center.extended(length: arc.radius, angle: arc.start)
+    public func addArc(_ arc: Arc, radius: CGFloat) {
+        let origin = arc.center.extended(length: radius, angle: arc.start)
         
         move(to: origin)
-        addArc(center: arc.center, radius: arc.radius, startAngle: arc.start, endAngle: arc.end, clockwise: arc.clockwise)
+        addArc(center: arc.center, radius: radius, startAngle: arc.start, endAngle: arc.end, clockwise: arc.clockwise)
     }
     
     public func addCircle(_ circle: Circle) {

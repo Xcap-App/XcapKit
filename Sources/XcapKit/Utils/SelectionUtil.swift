@@ -56,8 +56,12 @@ public struct SelectionUtil {
         return dx * dx + dy * dy <= circle.radius * circle.radius
     }
     
-    public func selects(_ arc: Arc) -> Bool {
-        let ccount = corners.filter(arc.contains(_:)).count
+    public func selects(_ arc: Arc, radius: CGFloat) -> Bool {
+        let ccount = corners
+            .filter { point in
+                arc.contains(point, radius: radius)
+            }
+            .count
         
         guard ccount == 0 else {
             return ccount != corners.count
@@ -65,14 +69,14 @@ public struct SelectionUtil {
         
         let angles: [CGFloat] = [0, .pi / 2, .pi, -.pi / 2]
         let points = angles.filter(arc.contains(_:))
-            .map { arc.center.extended(length: arc.radius, angle: $0) }
+            .map { arc.center.extended(length: radius, angle: $0) }
         
         guard !points.contains(where: rect.contains(_:)) else {
             return true
         }
         
-        let lines = [Line(start: arc.center, end: arc.center.extended(length: arc.radius, angle: arc.start)),
-                     Line(start: arc.center, end: arc.center.extended(length: arc.radius, angle: arc.end))]
+        let lines = [Line(start: arc.center, end: arc.center.extended(length: radius, angle: arc.start)),
+                     Line(start: arc.center, end: arc.center.extended(length: radius, angle: arc.end))]
         
         guard !lines.contains(where: selects(_:)) else {
             return true
