@@ -21,13 +21,8 @@ extension Plugin {
     public enum State {
         case idle
         case began(location: CGPoint)
-        case moved(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
-        case ended(location: CGPoint, initialLocation: CGPoint, lastLocation: CGPoint)
-    }
-    
-    public enum DrawingMode {
-        case toContent
-        case toView
+        case moved(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
+        case ended(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
     }
     
 }
@@ -43,10 +38,6 @@ open class Plugin: NSObject, SettingsInspector {
     
     open var priority: Priority {
         .high
-    }
-    
-    open var drawingMode: DrawingMode {
-        .toContent
     }
     
     // MARK: - Settings
@@ -90,7 +81,7 @@ open class Plugin: NSObject, SettingsInspector {
     
     // MARK: - Drawing
     
-    open func draw(in xcapView: XcapView, state: State, context: CGContext) {
+    open func draw(in xcapView: XcapView, state: State, contentRect: CGRect, contentScaleFactor: CGPoint) {
         
     }
     
