@@ -100,6 +100,23 @@ public struct Line: Equatable, Hashable, Codable {
         self = rotated(angle: angle)
     }
     
+    public func projection(_ point: CGPoint) -> CGPoint? {
+        guard distance != 0 else {
+            return nil
+        }
+        
+        let A = start
+        let B = end
+        let C = point
+        let AC = CGPoint(x: C.x - A.x, y: C.y - A.y)
+        let AB = CGPoint(x: B.x - A.x, y: B.y - A.y)
+        let ACAB = AC.x * AB.x + AC.y * AB.y
+        let m = ACAB / (distance * distance)
+        let AD = CGPoint(x: AB.x * m, y: AB.y * m)
+        
+        return CGPoint(x: A.x + AD.x, y: A.y + AD.y)
+    }
+    
     public func contains(_ point: CGPoint) -> Bool {
         let A = (start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y)
         let B = (end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y)

@@ -62,4 +62,35 @@ class LineTests: XCTestCase {
         XCTAssertTrue(line.collides(with: line3))
     }
     
+    func testLine_projection() {
+        func erase(_ point: CGPoint?) -> CGPoint? {
+            guard let point = point else {
+                return nil
+            }
+            
+            let n = CGFloat(pow(10.0, 8))
+            
+            return CGPoint(
+                x: (point.x * n).rounded() / n,
+                y: (point.y * n).rounded() / n
+            )
+        }
+        
+        let line1 = Line(start: .zero, end: .init(x: 10, y: 10))
+        let p1 = line1.projection(.init(x: 10, y: 0))
+        XCTAssertEqual(erase(p1), .init(x: 5, y: 5))
+        
+        let line2 = Line(start: .zero, end: .init(x: -10, y: 10))
+        let p2 = line2.projection(.init(x: 0, y: 10))
+        XCTAssertEqual(erase(p2), .init(x: -5, y: 5))
+        
+        let line3 = Line(start: .zero, end: .init(x: -10, y: -10))
+        let p3 = line3.projection(.init(x: -10, y: 0))
+        XCTAssertEqual(erase(p3), .init(x: -5, y: -5))
+        
+        let line4 = Line(start: .zero, end: .init(x: 10, y: -10))
+        let p4 = line4.projection(.init(x: -10, y: 0))
+        XCTAssertEqual(erase(p4), .init(x: -5, y: 5))
+    }
+    
 }
