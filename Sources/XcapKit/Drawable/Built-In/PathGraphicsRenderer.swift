@@ -42,20 +42,8 @@ extension PathGraphicsRenderer {
         
     }
     
-    public struct LineDash {
-        
-        public var phase: CGFloat
-        public var lengths: [CGFloat]
-        
-        public init(phase: CGFloat, lengths: [CGFloat]) {
-            self.phase = phase
-            self.lengths = lengths
-        }
-        
-    }
-    
     public enum Method {
-        case stroke(lineWidth: CGFloat, lineCap: LineCap = .butt, lineJoin: LineJoin = .bevel, lineDash: LineDash? = nil)
+        case stroke(lineWidth: CGFloat, lineCap: LineCap = .butt, lineJoin: LineJoin = .bevel, dash: [CGFloat] = [], dashPhase: CGFloat = 0)
         case fill
     }
     
@@ -119,12 +107,12 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
         context.setShadow(offset: shadow?.offset ?? .zero, blur: shadow?.blur ?? 0, color: shadow?.color.cgColor)
         
         switch method {
-        case let .stroke(width, cap, join, dash):
+        case let .stroke(width, cap, join, dash, dashPhase):
             context.setLineWidth(width)
             context.setLineCap(cap.cgLineCap)
             context.setLineJoin(join.info.cgLineJoin)
             context.setMiterLimit(join.info.miterLimit)
-            context.setLineDash(phase: dash?.phase ?? 0, lengths: dash?.lengths ?? [])
+            context.setLineDash(phase: dashPhase, lengths: dash)
             context.setStrokeColor(color.cgColor)
             context.strokePath()
             
@@ -139,7 +127,7 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
     
     public func contains(point: CGPoint, range: CGFloat = 0) -> Bool {
         switch method {
-        case let .stroke(lineWidth, cap, join, _):
+        case let .stroke(lineWidth, cap, join, _, _):
             let width = max(lineWidth, range * 2)
             let path = cgPath.copy(
                 strokingWithWidth: width,
