@@ -77,14 +77,12 @@ public struct Line: Equatable, Hashable, Codable {
         return.cross(point);
     }
     
-    public func collides(with line: Line) -> Bool {
-        let a1 = start.x - line.start.x
-        let a2 = start.y - line.start.y
-        let b1 = line.dy * dx - line.dx * dy
-        let uA = (line.dx * a2 - line.dy * a1) / b1
-        let uB = (dx * a2 - dy * a1) / b1
-        
-        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
+    public func reversed() -> Line {
+        Line(start: end, end: start)
+    }
+    
+    public mutating func reverse() {
+        self = reversed()
     }
     
     public func rotated(angle: Angle) -> Line {
@@ -123,6 +121,16 @@ public struct Line: Equatable, Hashable, Codable {
         let C = (start.x - end.x) * (start.x - end.x) + (start.y - end.y) * (start.y - end.y)
         
         return (A + B + 2 * sqrt(A * B) - C < 1)
+    }
+    
+    public func collides(with line: Line) -> Bool {
+        let a1 = start.x - line.start.x
+        let a2 = start.y - line.start.y
+        let b1 = line.dy * dx - line.dx * dy
+        let uA = (line.dx * a2 - line.dy * a1) / b1
+        let uB = (dx * a2 - dy * a1) / b1
+        
+        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
     }
     
 }
