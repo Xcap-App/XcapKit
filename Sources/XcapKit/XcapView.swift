@@ -79,8 +79,8 @@ extension XcapView {
     
     private enum ObjectDecoration {
         case none
-        case items(Editable, highlightedPosition: ObjectLayout.Position?)
-        case boundingBox(ObjectRenderer, highlighted: Bool)
+        case withItems(Editable, highlightedPosition: ObjectLayout.Position?)
+        case withBoundingBox(ObjectRenderer, highlighted: Bool)
     }
     
     // ----- Public -----
@@ -177,9 +177,6 @@ open class XcapView: PlatformView, SettingsInspector {
     @Setting
     dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
     
-    @Setting
-    dynamic open var itemSelectionMode: ItemSelectionMode = .circle
-    
     // ----- Drawing Session Settings -----
     
     @Setting
@@ -207,9 +204,12 @@ open class XcapView: PlatformView, SettingsInspector {
         #if os(macOS)
         return .controlAccentColor
         #else
-        return .systemBlue
+        return .init(named: "AccentColor") ?? .systemBlue
         #endif
     }()
+    
+    @Setting
+    dynamic open var objectItemSelectionMode: ItemSelectionMode = .circle
     
     // ----- Object Bounding Box Settings -----
     
@@ -451,7 +451,7 @@ open class XcapView: PlatformView, SettingsInspector {
                     let position = ObjectLayout.Position(item: items.count - j - 1,
                                                          section: object.layout.count - i - 1)
                     
-                    switch itemSelectionMode {
+                    switch objectItemSelectionMode {
                     case .circle:
                         let rangeCircle = Circle(center: item, radius: convertedSelectionRange)
                         
@@ -894,25 +894,6 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    private func drawPlugins(contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
-        for plugin in plugins where plugin.isEnabled {
-            let pluginState: Plugin.State = {
-                guard case let .plugin(aPlugin, pluginState, _, _) = internalState, aPlugin == plugin else {
-                    return .idle
-                }
-                return pluginState
-            }()
-            
-            if plugin.shouldDraw(in: self, state: pluginState) {
-                context.saveGState()
-                
-                plugin.draw(in: self, state: pluginState, contentRect: contentRect, contentScaleFactor: contentScaleFactor)
-                
-                context.restoreGState()
-            }
-        }
-    }
-    
     private func drawSelectionRect(_ rect: CGRect, contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
         // Start
         context.saveGState()
@@ -920,14 +901,16 @@ open class XcapView: PlatformView, SettingsInspector {
         let rect = rect
             .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
             .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
-        let path = CGPath(roundedRect: rect,
-                          cornerWidth: selectionRectCornerRadius,
-                          cornerHeight: selectionRectCornerRadius,
-                          transform: nil)
+        let rectPath = CGPath(
+            roundedRect: rect,
+            cornerWidth: selectionRectCornerRadius,
+            cornerHeight: selectionRectCornerRadius,
+            transform: nil
+        )
         
         context.setFillColor(selectionRectFillColor.cgColor)
         context.setStrokeColor(selectionRectBorderColor.cgColor)
-        context.addPath(path)
+        context.addPath(rectPath)
         context.drawPath(using: .fillStroke)
         
         // End
@@ -947,10 +930,10 @@ open class XcapView: PlatformView, SettingsInspector {
                 return .none
                 
             case let .onItem(anObject, position, _):
-                return .items(object, highlightedPosition: anObject == object ? position : nil)
+                return .withItems(object, highlightedPosition: anObject == object ? position : nil)
                 
             default:
-                return .items(object, highlightedPosition: nil)
+                return .withItems(object, highlightedPosition: nil)
             }
         } else {
             switch internalState {
@@ -958,97 +941,94 @@ open class XcapView: PlatformView, SettingsInspector {
                 return .none
                 
             case let .onObject(anObject, _, _):
-                return .boundingBox(object, highlighted: anObject == object)
+                return .withBoundingBox(object, highlighted: anObject == object)
                 
             default:
-                return .boundingBox(object, highlighted: false)
+                return .withBoundingBox(object, highlighted: false)
             }
         }
     }
     
     private func drawObjects(contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
         for object in objects where !selectedObjects.contains(object) {
-            drawObject(object, contentRect: contentRect, contentScaleFactor: contentScaleFactor, context: context)
+            drawObject(
+                object,
+                isSelected: false,
+                contentRect: contentRect,
+                contentScaleFactor: contentScaleFactor,
+                context: context
+            )
         }
         
         for object in selectedObjects {
-            let decoration = decoration(for: object, isSelected: true)
-            
-            switch decoration {
-            case .none:
-                drawObject(object, contentRect: contentRect, contentScaleFactor: contentScaleFactor, context: context)
-                
-            case let .items(object, position):
-                drawObject(object, contentRect: contentRect, contentScaleFactor: contentScaleFactor, context: context)
-                drawItems(
-                    for: object,
-                    highlightedPosition: position,
-                    contentRect: contentRect,
-                    scaleFactor: contentScaleFactor,
-                    context: context
-                )
-                
-            case let .boundingBox(object, highlighted):
-                if let boundingBox = object.pathOfMainGraphics?.boundingBoxOfPath {
-                    let rect = boundingBox
-                        .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
-                        .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
-                    
-                    drawBoundingBox(rect, highlighted: highlighted, context: context)
-                }
-                drawObject(object, contentRect: contentRect, contentScaleFactor: contentScaleFactor, context: context)
-            }
+            drawObject(
+                object,
+                isSelected: true,
+                contentRect: contentRect,
+                contentScaleFactor: contentScaleFactor,
+                context: context
+            )
         }
         
         if let object = currentObject {
-            drawObject(object, contentRect: contentRect, contentScaleFactor: contentScaleFactor, context: context)
+            drawObject(
+                object,
+                isSelected: false,
+                contentRect: contentRect,
+                contentScaleFactor: contentScaleFactor,
+                context: context
+            )
         }
     }
     
-    private func drawObject(_ object: ObjectRenderer, contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
-        // Start
-        context.saveGState()
+    private func drawObject(
+        _ object: ObjectRenderer,
+        isSelected: Bool,
+        contentRect: CGRect,
+        contentScaleFactor: CGPoint,
+        context: CGContext
+    ) {
+        func drawObject() {
+            // Start
+            context.saveGState()
+            
+            context.translateBy(x: contentRect.origin.x, y: contentRect.origin.y)
+            context.scaleBy(x: contentScaleFactor.x, y: contentScaleFactor.y)
+            object.draw(context: context)
+            
+            // End
+            context.restoreGState()
+        }
         
-        context.translateBy(x: contentRect.origin.x, y: contentRect.origin.y)
-        context.scaleBy(x: contentScaleFactor.x, y: contentScaleFactor.y)
+        let decoration = decoration(for: object, isSelected: isSelected)
         
-        object.draw(context: context)
-        
-        // End
-        context.restoreGState()
+        switch decoration {
+        case .none:
+            drawObject()
+            
+        case let .withItems(object, position):
+            drawObject()
+            drawObjectItems(
+                for: object,
+                highlightedPosition: position,
+                contentRect: contentRect,
+                scaleFactor: contentScaleFactor,
+                context: context
+            )
+            
+        case let .withBoundingBox(object, highlighted):
+            drawObjectBoundingBox(
+                object: object,
+                highlighted: highlighted,
+                contentRect: contentRect,
+                contentScaleFactor: contentScaleFactor,
+                context: context
+            )
+            drawObject()
+        }
     }
     
-    private func drawBoundingBox(_ boundingBox: CGRect, highlighted: Bool, context: CGContext) {
-        // Start
-        context.saveGState()
-        
-        let borderColor = highlighted ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
-        let fillColor = highlighted ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
-        let convertedBoundingBox: CGRect = {
-            var rect = boundingBox
-                .insetBy(dx: -selectionRange, dy: -selectionRange)
-            rect.origin.x = rect.origin.x.rounded() + 0.5
-            rect.origin.y = rect.origin.y.rounded() + 0.5
-            rect.size.width.round()
-            rect.size.height.round()
-            return rect
-        }()
-        
-        let path = CGPath(roundedRect: convertedBoundingBox,
-                          cornerWidth: objectBoundingBoxCornerRadius,
-                          cornerHeight: objectBoundingBoxCornerRadius,
-                          transform: nil)
-        
-        context.setFillColor(fillColor.cgColor)
-        context.setStrokeColor(borderColor.cgColor)
-        context.addPath(path)
-        context.drawPath(using: .fillStroke)
-        
-        // End
-        context.restoreGState()
-    }
-    
-    private func drawItems(
+    private func drawObjectItems(
         for object: Editable,
         highlightedPosition: ObjectLayout.Position?,
         contentRect: CGRect,
@@ -1057,12 +1037,10 @@ open class XcapView: PlatformView, SettingsInspector {
     ) {
         // Start
         context.saveGState()
-        
         context.translateBy(x: contentRect.origin.x, y: contentRect.origin.y)
         
         let itemTransform = CGAffineTransform.identity
-            .scaledBy(x: scaleFactor.x,
-                      y: scaleFactor.y)
+            .scaledBy(x: scaleFactor.x, y: scaleFactor.y)
         
         for (i, items) in object.layout.enumerated() {
             for (j, item) in items.enumerated() {
@@ -1074,8 +1052,13 @@ open class XcapView: PlatformView, SettingsInspector {
                 
                 let point = item.applying(itemTransform)
                 let highlighted = highlightedPosition == position
+                let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
+                let fillColor = highlighted ? objectItemHighlightFillColor : objectItemFillColor
                 
-                drawItem(at: point, highlighted: highlighted, context: context)
+                context.addArc(center: point, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+                context.setStrokeColor(strokeColor.cgColor)
+                context.setFillColor(fillColor.cgColor)
+                context.drawPath(using: .fillStroke)
             }
         }
         
@@ -1083,15 +1066,70 @@ open class XcapView: PlatformView, SettingsInspector {
         context.restoreGState()
     }
     
-    private func drawItem(at point: CGPoint, highlighted: Bool, context: CGContext) {
-        let strokeColor = highlighted ? objectItemHighlightBorderColor : objectItemBorderColor
-        let fillColor = highlighted ? objectItemHighlightFillColor : objectItemFillColor
+    private func drawObjectBoundingBox(
+        object: ObjectRenderer,
+        highlighted: Bool,
+        contentRect: CGRect,
+        contentScaleFactor: CGPoint,
+        context: CGContext
+    ) {
+        guard let pathBoundingBox = object.pathOfMainGraphics?.boundingBoxOfPath else {
+            return
+        }
         
-        context.setStrokeColor(strokeColor.cgColor)
+        // Start
+        context.saveGState()
+        
+        let prettyBoundingBox: CGRect = {
+            var rect = pathBoundingBox
+                .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
+                .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
+                .insetBy(dx: -selectionRange, dy: -selectionRange)
+            
+            rect.origin.x = rect.origin.x.rounded() + 0.5
+            rect.origin.y = rect.origin.y.rounded() + 0.5
+            rect.size.width.round()
+            rect.size.height.round()
+            
+            return rect
+        }()
+        let boundingBoxPath = CGPath(
+            roundedRect: prettyBoundingBox,
+            cornerWidth: objectBoundingBoxCornerRadius,
+            cornerHeight: objectBoundingBoxCornerRadius,
+            transform: nil
+        )
+        let borderColor = highlighted ? objectBoundingBoxHighlightBorderColor : objectBoundingBoxBorderColor
+        let fillColor = highlighted ? objectBoundingBoxHighlightFillColor : objectBoundingBoxFillColor
+        
         context.setFillColor(fillColor.cgColor)
-        
-        context.addArc(center: point, radius: selectionRange, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+        context.setStrokeColor(borderColor.cgColor)
+        context.addPath(boundingBoxPath)
         context.drawPath(using: .fillStroke)
+        
+        // End
+        context.restoreGState()
+    }
+    
+    // MARK: - Draw Plugin
+    
+    private func drawPlugins(contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
+        for plugin in plugins where plugin.isEnabled {
+            let pluginState: Plugin.State = {
+                guard case let .plugin(aPlugin, pluginState, _, _) = internalState, aPlugin == plugin else {
+                    return .idle
+                }
+                return pluginState
+            }()
+            
+            if plugin.shouldDraw(in: self, state: pluginState) {
+                context.saveGState()
+                
+                plugin.draw(in: self, state: pluginState, contentRect: contentRect, contentScaleFactor: contentScaleFactor)
+                
+                context.restoreGState()
+            }
+        }
     }
     
 }
