@@ -32,7 +32,6 @@ public struct Arc: Equatable, Hashable, Codable {
         }
     }
     
-    // Always clockwise.
     public init(center: CGPoint, start: CGFloat, end: CGFloat, clockwise: Bool) {
         self.center = center
         self.start = start
@@ -40,6 +39,7 @@ public struct Arc: Equatable, Hashable, Codable {
         self.clockwise = clockwise
     }
     
+    // Always clockwise.
     public init(center: CGPoint, startPoint: CGPoint, endPoint: CGPoint) {
         let start = Line(start: center, end: startPoint).angle
         let end = Line(start: center, end: endPoint).angle
