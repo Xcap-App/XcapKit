@@ -478,8 +478,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     }
     
     open func makePreliminaryGraphics() -> [Drawable] {
-        let lineDash = PathGraphicsRenderer.LineDash(phase: 4, lengths: [4])
-        let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth, lineDash: lineDash)
+        let method = PathGraphicsRenderer.Method.stroke(lineWidth: lineWidth, dash: [4])
         let renderer = PathGraphicsRenderer(method: method, color: strokeColor) { path in
             layout.forEach { items in
                 if items.count > 1 {

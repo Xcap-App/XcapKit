@@ -77,14 +77,12 @@ public struct Line: Equatable, Hashable, Codable {
         return.cross(point);
     }
     
-    public func collides(with line: Line) -> Bool {
-        let a1 = start.x - line.start.x
-        let a2 = start.y - line.start.y
-        let b1 = line.dy * dx - line.dx * dy
-        let uA = (line.dx * a2 - line.dy * a1) / b1
-        let uB = (dx * a2 - dy * a1) / b1
-        
-        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
+    public func reversed() -> Line {
+        Line(start: end, end: start)
+    }
+    
+    public mutating func reverse() {
+        self = reversed()
     }
     
     public func rotated(angle: Angle) -> Line {
@@ -100,12 +98,39 @@ public struct Line: Equatable, Hashable, Codable {
         self = rotated(angle: angle)
     }
     
+    public func projection(_ point: CGPoint) -> CGPoint? {
+        guard distance != 0 else {
+            return nil
+        }
+        
+        let A = start
+        let B = end
+        let C = point
+        let AC = CGPoint(x: C.x - A.x, y: C.y - A.y)
+        let AB = CGPoint(x: B.x - A.x, y: B.y - A.y)
+        let ACAB = AC.x * AB.x + AC.y * AB.y
+        let m = ACAB / (distance * distance)
+        let AD = CGPoint(x: AB.x * m, y: AB.y * m)
+        
+        return CGPoint(x: A.x + AD.x, y: A.y + AD.y)
+    }
+    
     public func contains(_ point: CGPoint) -> Bool {
         let A = (start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y)
         let B = (end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y)
         let C = (start.x - end.x) * (start.x - end.x) + (start.y - end.y) * (start.y - end.y)
         
         return (A + B + 2 * sqrt(A * B) - C < 1)
+    }
+    
+    public func collides(with line: Line) -> Bool {
+        let a1 = start.x - line.start.x
+        let a2 = start.y - line.start.y
+        let b1 = line.dy * dx - line.dx * dy
+        let uA = (line.dx * a2 - line.dy * a1) / b1
+        let uB = (dx * a2 - dy * a1) / b1
+        
+        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
     }
     
 }

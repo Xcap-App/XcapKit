@@ -11,15 +11,13 @@ protocol SettingsInspector: NSObject {
     var undoManager: UndoManager? { get }
 }
 
-private var kUndoManagerAssociation: UInt8 = 0
-
 extension SettingsInspector {
     
     func registerSettings(redrawHandler: @escaping () -> Void) {
         let properties = Mirror(reflecting: self).properties(ofType: SettingValueObservable.self)
         
         for (key, value) in properties {
-            value.valueDidUpdate = { [weak self, weak value] (new: Any, old: Any) in
+            value.valueDidUpdate = { [weak self, weak value] observation in
                 guard let self = self, let value = value else {
                     return
                 }
@@ -30,7 +28,7 @@ extension SettingsInspector {
                 
                 if case .enable(let name) = value.undoMode {
                     let keyPath = String(key.dropFirst())
-                    self.registerUndoAction(named: name, keyPath: keyPath, value: old)
+                    self.registerUndoAction(named: name, keyPath: keyPath, value: observation.old)
                 }
             }
         }

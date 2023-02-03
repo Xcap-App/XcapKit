@@ -7,8 +7,13 @@
 
 import Foundation
 
+struct SettingsValueObservation {
+    var old: Any
+    var new: Any
+}
+
 protocol SettingValueObservable: SettingType {
     
-    var valueDidUpdate: ((Any, Any) -> Void)? { get set }
+    var valueDidUpdate: ((SettingsValueObservation) -> Void)? { get set }
     
 }
