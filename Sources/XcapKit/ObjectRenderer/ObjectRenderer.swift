@@ -519,9 +519,9 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
             
             mainGraphics = graphics
             pathOfMainGraphics = graphics
-                .compactMap { $0 as? CGPathProvider }
-                .reduce(CGMutablePath()) { mutablePath, renderer in
-                    mutablePath.addPath(renderer.cgPath)
+                .compactMap(\.cgPath)
+                .reduce(CGMutablePath()) { mutablePath, path in
+                    mutablePath.addPath(path)
                     return mutablePath
                 }
         } else {
