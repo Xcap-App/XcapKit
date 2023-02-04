@@ -63,9 +63,9 @@ extension PathGraphicsRenderer {
     
 }
 
-public class PathGraphicsRenderer: Drawable, CGPathProvider {
+public class PathGraphicsRenderer: Drawable {
     
-    public let cgPath: CGPath
+    private let internalPath: CGPath
     
     public var method: Method
     
@@ -73,12 +73,16 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
     
     public var shadow: Shadow?
     
+    public var cgPath: CGPath? {
+        internalPath
+    }
+    
     // MARK: - Life Cycle
     
     public init(method: Method, color: PlatformColor, shadow: Shadow? = nil, path: CGPath) {
         self.method = method
         self.color = color
-        self.cgPath = path
+        self.internalPath = path
         self.shadow = shadow
     }
     
@@ -89,7 +93,7 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
         
         self.method = method
         self.color = color
-        self.cgPath = path
+        self.internalPath = path
         self.shadow = shadow
     }
     
@@ -103,7 +107,7 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
         // Start
         context.saveGState()
         
-        context.addPath(cgPath)
+        context.addPath(internalPath)
         context.setShadow(offset: shadow?.offset ?? .zero, blur: shadow?.blur ?? 0, color: shadow?.color.cgColor)
         
         switch method {
@@ -129,7 +133,7 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
         switch method {
         case let .stroke(lineWidth, cap, join, _, _):
             let width = max(lineWidth, range * 2)
-            let path = cgPath.copy(
+            let path = internalPath.copy(
                 strokingWithWidth: width,
                 lineCap: cap.cgLineCap,
                 lineJoin: join.info.cgLineJoin,
@@ -138,7 +142,7 @@ public class PathGraphicsRenderer: Drawable, CGPathProvider {
             return path.contains(point)
             
         case .fill:
-            return cgPath.contains(point, using: .evenOdd)
+            return internalPath.contains(point, using: .evenOdd)
         }
     }
     
