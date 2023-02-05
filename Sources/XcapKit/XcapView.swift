@@ -898,19 +898,19 @@ open class XcapView: PlatformView, SettingsInspector {
         // Start
         context.saveGState()
         
-        let rect = rect
-            .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
-            .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
-        let rectPath = CGPath(
-            roundedRect: rect,
-            cornerWidth: selectionRectCornerRadius,
-            cornerHeight: selectionRectCornerRadius,
-            transform: nil
-        )
+        let scaling = CGAffineTransform(scaleX: contentScaleFactor.x, y: contentScaleFactor.y)
+        let translation = CGAffineTransform(translationX: contentRect.origin.x, y: contentRect.origin.y)
+        let origin = rect.origin
+            .applying(scaling)
+            .applying(translation)
+        let size = rect.size
+            .applying(scaling)
+        let selectionRect = CGRect(origin: origin, size: size)
+            .pretty()
         
         context.setFillColor(selectionRectFillColor.cgColor)
         context.setStrokeColor(selectionRectBorderColor.cgColor)
-        context.addPath(rectPath)
+        context.addRect(selectionRect)
         context.drawPath(using: .fillStroke)
         
         // End
@@ -1080,21 +1080,13 @@ open class XcapView: PlatformView, SettingsInspector {
         // Start
         context.saveGState()
         
-        let prettyBoundingBox: CGRect = {
-            var rect = pathBoundingBox
-                .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
-                .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
-                .insetBy(dx: -selectionRange, dy: -selectionRange)
-            
-            rect.origin.x = rect.origin.x.rounded() + 0.5
-            rect.origin.y = rect.origin.y.rounded() + 0.5
-            rect.size.width.round()
-            rect.size.height.round()
-            
-            return rect
-        }()
+        let boundingBox = pathBoundingBox
+            .applying(.init(scaleX: contentScaleFactor.x, y: contentScaleFactor.y))
+            .applying(.init(translationX: contentRect.origin.x, y: contentRect.origin.y))
+            .insetBy(dx: -selectionRange, dy: -selectionRange)
+            .pretty()
         let boundingBoxPath = CGPath(
-            roundedRect: prettyBoundingBox,
+            roundedRect: boundingBox,
             cornerWidth: objectBoundingBoxCornerRadius,
             cornerHeight: objectBoundingBoxCornerRadius,
             transform: nil
