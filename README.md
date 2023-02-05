@@ -6,6 +6,3 @@
  /_/\_\___\__,_| .__/|_|\_\_|\__|
                |_|               
 ```
-
-
-[Demo Repo](https://github.com/Xcap-App/XcapKit-Demo)
