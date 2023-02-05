@@ -14,7 +14,7 @@ protocol SettingsInspector: NSObject {
 extension SettingsInspector {
     
     func registerSettings(redrawHandler: @escaping () -> Void) {
-        let properties = Mirror(reflecting: self).properties(ofType: SettingValueObservable.self)
+        let properties = Mirror(reflecting: self).properties(ofType: (Observable & SettingConfiguration).self)
         
         for (key, value) in properties {
             value.valueDidUpdate = { [weak self, weak value] observation in
