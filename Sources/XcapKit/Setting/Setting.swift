@@ -8,9 +8,9 @@
 import Foundation
 
 @propertyWrapper
-public final class Setting<Value>: SettingValueObservable {
+public final class Setting<Value>: Observable, SettingConfiguration {
     
-    var valueDidUpdate: ((SettingsValueObservation) -> Void)?
+    var valueDidUpdate: ((Observation) -> Void)?
     
     public var undoMode: UndoMode
     
@@ -18,12 +18,12 @@ public final class Setting<Value>: SettingValueObservable {
     
     public var wrappedValue: Value {
         didSet {
-            let observation = SettingsValueObservation(old: oldValue, new: wrappedValue)
+            let observation = Observation(old: oldValue, new: wrappedValue)
             valueDidUpdate?(observation)
         }
     }
     
-    public var projectedValue: SettingType {
+    public var projectedValue: SettingConfiguration {
         self
     }
     
