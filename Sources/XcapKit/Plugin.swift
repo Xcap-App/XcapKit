@@ -13,15 +13,16 @@ extension Plugin {
     // ----- Public -----
     
     public enum Priority {
+        case overlay
+        case underlay
         case high
         case low
-        case overlay
     }
     
     public enum State {
         case idle
         case began(location: CGPoint)
-        case moved(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
+        case tracked(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
         case ended(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
     }
     
@@ -42,8 +43,7 @@ open class Plugin: NSObject, SettingsInspector {
     
     // MARK: - Settings
     
-    @Setting
-    open var isEnabled: Bool = false
+    @Setting open var isEnabled: Bool = false
     
     // MARK: - Life Cycle
     
@@ -55,24 +55,14 @@ open class Plugin: NSObject, SettingsInspector {
         }
     }
     
-    // MARK: - Condition
-    
-    open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
-        false
-    }
-    
-    open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
-        true
-    }
-    
     // MARK: - Observer
     
-    open func pluginDidAdd(to xcapView: XcapView) {
+    open func pluginDidInstall(in xcapView: XcapView) {
         
     }
     
-    open func remove(from xcapView: XcapView) {
-        
+    open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
+        priority != .overlay && priority != .underlay
     }
     
     open func update(in xcapView: XcapView, state: State) {
@@ -80,6 +70,10 @@ open class Plugin: NSObject, SettingsInspector {
     }
     
     // MARK: - Drawing
+    
+    open func shouldDraw(in xcapView: XcapView, state: State) -> Bool {
+        true
+    }
     
     open func draw(in xcapView: XcapView, state: State, contentRect: CGRect, contentScaleFactor: CGPoint) {
         
