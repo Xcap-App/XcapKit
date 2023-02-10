@@ -22,7 +22,7 @@ extension Plugin {
     public enum State {
         case idle
         case began(location: CGPoint)
-        case tracked(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
+        case changed(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
         case ended(location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint)
     }
     

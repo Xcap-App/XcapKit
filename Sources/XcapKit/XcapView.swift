@@ -1489,7 +1489,7 @@ extension XcapView {
     }
     
     private func continueUpdatingPlugin(_ plugin: Plugin, location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint) {
-        let pluginState: Plugin.State = .tracked(location: location, lastLocation: lastLocation, initialLocation: initialLocation)
+        let pluginState: Plugin.State = .changed(location: location, lastLocation: lastLocation, initialLocation: initialLocation)
         
         plugin.update(in: self, state: pluginState)
         
