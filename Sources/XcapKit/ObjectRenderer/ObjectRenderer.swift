@@ -185,16 +185,13 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     open private(set) var rotationAngle = Angle.radians(0)
     
     /// Default = Black
-    @Setting
-    dynamic open var strokeColor: PlatformColor = .black
+    @Setting dynamic open var strokeColor: PlatformColor = .black
     
     /// Default = White
-    @Setting
-    dynamic open var fillColor: PlatformColor = .white
+    @Setting dynamic open var fillColor: PlatformColor = .white
     
     /// Default = 1
-    @Setting
-    dynamic open var lineWidth: CGFloat = 1
+    @Setting dynamic open var lineWidth: CGFloat = 1
     
     // MARK: - Events
     

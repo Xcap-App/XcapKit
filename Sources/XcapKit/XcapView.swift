@@ -158,49 +158,37 @@ open class XcapView: PlatformView, SettingsInspector {
         didSet { contentSizeDidChange(oldValue) }
     }
     
-    @Setting
-    dynamic open var contentBackgroundColor: PlatformColor = .white
+    @Setting dynamic open var contentBackgroundColor: PlatformColor = .white
     
     // ----- Selection Settings -----
     
-    @Setting
-    dynamic open var selectionRange: CGFloat = 10 {
+    @Setting dynamic open var selectionRange: CGFloat = 10 {
         didSet { updateContentInfo() }
     }
     
-    @Setting
-    dynamic open var selectionRectCornerRadius: CGFloat = 0
+    @Setting dynamic open var selectionRectCornerRadius: CGFloat = 0
     
-    @Setting
-    dynamic open var selectionRectBorderColor: PlatformColor = .lightGray
+    @Setting dynamic open var selectionRectBorderColor: PlatformColor = .lightGray
     
-    @Setting
-    dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
+    @Setting dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
     
     // ----- Drawing Session Settings -----
     
-    @Setting
-    dynamic open var drawingSessionLineWidth: CGFloat = 1
+    @Setting dynamic open var drawingSessionLineWidth: CGFloat = 1
     
-    @Setting
-    dynamic open var drawingSessionStrokeColor: PlatformColor = .black
+    @Setting dynamic open var drawingSessionStrokeColor: PlatformColor = .black
     
-    @Setting
-    dynamic open var drawingSessionFillColor: PlatformColor = .white
+    @Setting dynamic open var drawingSessionFillColor: PlatformColor = .white
     
     // ----- Object Item Settings -----
     
-    @Setting
-    dynamic open var objectItemBorderColor: PlatformColor = .black
+    @Setting dynamic open var objectItemBorderColor: PlatformColor = .black
     
-    @Setting
-    dynamic open var objectItemFillColor: PlatformColor = .white
+    @Setting dynamic open var objectItemFillColor: PlatformColor = .white
     
-    @Setting
-    dynamic open var objectItemHighlightBorderColor: PlatformColor = .black
+    @Setting dynamic open var objectItemHighlightBorderColor: PlatformColor = .black
     
-    @Setting
-    dynamic open var objectItemHighlightFillColor: PlatformColor = {
+    @Setting dynamic open var objectItemHighlightFillColor: PlatformColor = {
         #if os(macOS)
         return .controlAccentColor
         #else
@@ -208,25 +196,19 @@ open class XcapView: PlatformView, SettingsInspector {
         #endif
     }()
     
-    @Setting
-    dynamic open var objectItemSelectionMode: ItemSelectionMode = .circle
+    @Setting dynamic open var objectItemSelectionMode: ItemSelectionMode = .circle
     
     // ----- Object Bounding Box Settings -----
     
-    @Setting
-    dynamic open var objectBoundingBoxCornerRadius: CGFloat = 4
+    @Setting dynamic open var objectBoundingBoxCornerRadius: CGFloat = 4
     
-    @Setting
-    dynamic open var objectBoundingBoxBorderColor: PlatformColor = .black
+    @Setting dynamic open var objectBoundingBoxBorderColor: PlatformColor = .black
     
-    @Setting
-    dynamic open var objectBoundingBoxFillColor: PlatformColor = .clear
+    @Setting dynamic open var objectBoundingBoxFillColor: PlatformColor = .clear
     
-    @Setting
-    dynamic open var objectBoundingBoxHighlightBorderColor: PlatformColor = .black
+    @Setting dynamic open var objectBoundingBoxHighlightBorderColor: PlatformColor = .black
     
-    @Setting
-    dynamic open var objectBoundingBoxHighlightFillColor: PlatformColor = .cyan.withAlphaComponent(0.3)
+    @Setting dynamic open var objectBoundingBoxHighlightFillColor: PlatformColor = .cyan.withAlphaComponent(0.3)
     
     // ----- Undo Settings -----
     
@@ -478,19 +460,20 @@ open class XcapView: PlatformView, SettingsInspector {
     // MARK: - Plugin Utils
     
     private func findPlugin(for priority: Plugin.Priority, at location: CGPoint) -> Plugin? {
-        return plugins.first { plugin in
-            guard plugin.priority == priority, plugin.isEnabled else {
-                return false
+        plugins.reversed()
+            .first { plugin in
+                guard plugin.priority == priority, plugin.isEnabled else {
+                    return false
+                }
+                return plugin.shouldBegin(in: self, location: location)
             }
-            return plugin.shouldBegin(in: self, location: location)
-        }
     }
     
     /// Add plugin.
     ///
     /// - Parameters:
     ///     - plugin: Must be subclass of `Plugin`.
-    open func addPlugin(_ plugin: Plugin) {
+    open func installPlugin(_ plugin: Plugin) {
         guard !plugins.contains(plugin) else {
             return
         }
@@ -501,7 +484,8 @@ open class XcapView: PlatformView, SettingsInspector {
             self?.redraw()
         }
         plugin.undoManager = undoManager
-        plugin.pluginDidAdd(to: self)
+        
+        plugin.pluginDidInstall(in: self)
         
         redraw()
     }
@@ -520,7 +504,6 @@ open class XcapView: PlatformView, SettingsInspector {
         
         plugin.redrawHandler = nil
         plugin.undoManager = nil
-        plugin.remove(from: self)
         
         redraw()
     }
@@ -861,9 +844,10 @@ open class XcapView: PlatformView, SettingsInspector {
         
         context.clip(to: contentRect)
         
+        drawPlugins(ofPriorities: [.underlay, .low], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
         drawBackground(contentRect: contentRect, context: context)
         drawObjects(contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
-        drawPlugins(contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
+        drawPlugins(ofPriorities: [.overlay, .high], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
         
         if case .selecting(let rect, _) = internalState {
             drawSelectionRect(rect, contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
@@ -1105,19 +1089,25 @@ open class XcapView: PlatformView, SettingsInspector {
     
     // MARK: - Draw Plugin
     
-    private func drawPlugins(contentRect: CGRect, contentScaleFactor: CGPoint, context: CGContext) {
-        for plugin in plugins where plugin.isEnabled {
-            let pluginState: Plugin.State = {
-                guard case let .plugin(aPlugin, pluginState, _, _) = internalState, aPlugin == plugin else {
+    private func drawPlugins(
+        ofPriorities priorities: [Plugin.Priority],
+        contentRect: CGRect,
+        contentScaleFactor: CGPoint,
+        context: CGContext
+    ) {
+        for plugin in plugins where priorities.contains(plugin.priority) && plugin.isEnabled {
+            let state: Plugin.State = {
+                if case let .plugin(aPlugin, state, _, _) = internalState, aPlugin == plugin {
+                    return state
+                } else {
                     return .idle
                 }
-                return pluginState
             }()
             
-            if plugin.shouldDraw(in: self, state: pluginState) {
+            if plugin.shouldDraw(in: self, state: state) {
                 context.saveGState()
                 
-                plugin.draw(in: self, state: pluginState, contentRect: contentRect, contentScaleFactor: contentScaleFactor)
+                plugin.draw(in: self, state: state, contentRect: contentRect, contentScaleFactor: contentScaleFactor)
                 
                 context.restoreGState()
             }
@@ -1499,7 +1489,7 @@ extension XcapView {
     }
     
     private func continueUpdatingPlugin(_ plugin: Plugin, location: CGPoint, lastLocation: CGPoint, initialLocation: CGPoint) {
-        let pluginState: Plugin.State = .moved(location: location, lastLocation: lastLocation, initialLocation: initialLocation)
+        let pluginState: Plugin.State = .tracked(location: location, lastLocation: lastLocation, initialLocation: initialLocation)
         
         plugin.update(in: self, state: pluginState)
         
