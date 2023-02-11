@@ -43,7 +43,7 @@ open class Plugin: NSObject, SettingsInspector {
     
     // MARK: - Settings
     
-    @Setting open var isEnabled: Bool = false
+    @Setting dynamic open var isEnabled: Bool = false
     
     // MARK: - Life Cycle
     
