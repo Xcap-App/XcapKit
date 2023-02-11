@@ -55,14 +55,6 @@ extension XcapView {
     
     // ----- Private -----
     
-    private enum DrawingSessionState {
-        case idle
-        case pressing
-        case moving
-        /// macOS Only
-        case tracking
-    }
-    
     private enum InternalState {
         case idle
         
@@ -85,6 +77,14 @@ extension XcapView {
     
     // ----- Public -----
     
+    public enum DrawingSessionState {
+        case idle
+        case pressing
+        case moving
+        /// macOS Only
+        case tracking
+    }
+    
     public enum State {
         case idle
         case selecting
@@ -92,7 +92,7 @@ extension XcapView {
         case onObject(ObjectRenderer)
         case editing(object: ObjectRenderer, position: ObjectLayout.Position)
         case moving([ObjectRenderer])
-        case drawing(ObjectRenderer)
+        case drawing(object: ObjectRenderer, sessionState: DrawingSessionState)
         case plugin(Plugin)
     }
     
@@ -355,8 +355,8 @@ open class XcapView: PlatformView, SettingsInspector {
             return .editing(object: object, position: position)
         case .moving:
             return .moving(selectedObjects)
-        case let .drawing(object, _):
-            return .drawing(object)
+        case let .drawing(object, state):
+            return .drawing(object: object, sessionState: state)
         case let .plugin(plugin, _, _, _):
             return .plugin(plugin)
         }
