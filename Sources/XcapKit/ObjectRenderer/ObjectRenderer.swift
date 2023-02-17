@@ -480,8 +480,8 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
             layout.forEach { items in
                 if items.count > 1 {
                     path.addLines(between: items)
-                } else if let item = items.first{
-                    path.addLines(between: [item, item])
+                } else if let item = items.first {
+                    path.addCircle(.init(center: item, radius: lineWidth / 2))
                 }
             }
         }
@@ -495,8 +495,8 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
             layout.forEach { items in
                 if items.count > 1 {
                     path.addLines(between: items)
-                } else if let item = items.first{
-                    path.addLines(between: [item, item])
+                } else if let item = items.first {
+                    path.addCircle(.init(center: item, radius: lineWidth / 2))
                 }
             }
         }

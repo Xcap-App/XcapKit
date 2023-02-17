@@ -103,11 +103,6 @@ extension XcapView {
         case editing
     }
     
-    public enum ItemSelectionMode {
-        case circle
-        case rectangle
-    }
-    
 }
 
 @objcMembers
@@ -158,7 +153,7 @@ open class XcapView: PlatformView, SettingsInspector {
         didSet { contentSizeDidChange(oldValue) }
     }
     
-    @Setting dynamic open var contentBackgroundColor: PlatformColor = .white
+    @Setting dynamic open var contentBackgroundColor: PlatformColor?
     
     // ----- Selection Settings -----
     
@@ -195,8 +190,6 @@ open class XcapView: PlatformView, SettingsInspector {
         return .init(named: "AccentColor") ?? .systemBlue
         #endif
     }()
-    
-    @Setting dynamic open var objectItemSelectionMode: ItemSelectionMode = .circle
     
     // ----- Object Bounding Box Settings -----
     
@@ -430,25 +423,14 @@ open class XcapView: PlatformView, SettingsInspector {
             
             for (i, items) in object.layout.reversed().enumerated() {
                 for (j, item) in items.reversed().enumerated() {
-                    let position = ObjectLayout.Position(item: items.count - j - 1,
-                                                         section: object.layout.count - i - 1)
+                    let position = ObjectLayout.Position(
+                        item: items.count - j - 1,
+                        section: object.layout.count - i - 1
+                    )
+                    let rangeCircle = Circle(center: item, radius: convertedSelectionRange)
                     
-                    switch objectItemSelectionMode {
-                    case .circle:
-                        let rangeCircle = Circle(center: item, radius: convertedSelectionRange)
-                        
-                        if rangeCircle.contains(location) && object.canEditItem(at: position) {
-                            return (object, position)
-                        }
-                        
-                    case .rectangle:
-                        let origin = CGPoint(x: item.x - convertedSelectionRange, y: item.y - convertedSelectionRange)
-                        let size = CGSize(width: convertedSelectionRange * 2, height: convertedSelectionRange * 2)
-                        let rect = CGRect(origin: origin, size: size)
-                        
-                        if rect.contains(location) {
-                            return (object, position)
-                        }
+                    if rangeCircle.contains(location) && object.canEditItem(at: position) {
+                        return (object, position)
                     }
                 }
             }
@@ -857,10 +839,9 @@ open class XcapView: PlatformView, SettingsInspector {
     public func drawContents(size: CGSize) {
         let bounds = CGRect(origin: .zero, size: size)
         let contentRect = AVMakeRect(aspectRatio: contentSize, insideRect: bounds)
-        let scaleFactor = calcScaleFactor(from: contentRect.size, to: contentSize)
-        let contentScaleFactor = CGPoint(x: 1 / scaleFactor.x, y: 1 / scaleFactor.y)
+        let scaleFactor = calcScaleFactor(from: contentSize, to: contentRect.size)
         
-        drawContents(contentRect: contentRect, scaleFactor: contentScaleFactor)
+        drawContents(contentRect: contentRect, scaleFactor: scaleFactor)
     }
     
     public override func draw(_ dirtyRect: CGRect) {
@@ -868,6 +849,10 @@ open class XcapView: PlatformView, SettingsInspector {
     }
     
     private func drawBackground(contentRect: CGRect, context: CGContext) {
+        guard let contentBackgroundColor = contentBackgroundColor else {
+            return
+        }
+        
         // Start
         context.saveGState()
         
@@ -1122,6 +1107,11 @@ extension XcapView {
     
     private func pointerDidBegin(at location: CGPoint) {
         let location = convertLocation(fromViewToContent: location)
+        let validRect = CGRect(origin: .zero, size: contentSize)
+        
+        guard validRect.contains(location) else {
+            return
+        }
         
         switch internalState {
         case .idle:
