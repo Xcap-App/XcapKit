@@ -20,7 +20,7 @@ public protocol XcapViewDelegate: AnyObject {
     func xcapViewDidCancelDrawingSession(_ xcapView: XcapView)
     func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool
     // ----- Selection -----
-    func xcapView(_ xcapView: XcapView, shouldSelect object: ObjectRenderer) -> Bool
+    func xcapView(_ xcapView: XcapView, shouldSelectObject object: ObjectRenderer) -> Bool
     func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer])
     func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer])
     // ----- Edit -----
@@ -40,7 +40,7 @@ extension XcapViewDelegate {
     public func xcapViewDidCancelDrawingSession(_ xcapView: XcapView) {}
     public func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool { false }
     // ----- Selection -----
-    func xcapView(_ xcapView: XcapView, shouldSelect object: ObjectRenderer) -> Bool { true }
+    public func xcapView(_ xcapView: XcapView, shouldSelectObject object: ObjectRenderer) -> Bool { true }
     public func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer]) {}
     public func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer]) {}
     // ----- Edit -----
@@ -700,7 +700,7 @@ open class XcapView: PlatformView, SettingsInspector {
     /// No Redraw
     private func internalSelectObjects(_ objects: [ObjectRenderer], byExtendingSelection extends: Bool = false) {
         let newSelection = objects.filter { object in
-            let isSelectable = delegate?.xcapView(self, shouldSelect: object) ?? true
+            let isSelectable = delegate?.xcapView(self, shouldSelectObject: object) ?? true
             return isSelectable && !selectedObjects.contains(object)
         }
         let removedSelection: [ObjectRenderer] = {
