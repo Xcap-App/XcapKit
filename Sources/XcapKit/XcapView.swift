@@ -20,6 +20,7 @@ public protocol XcapViewDelegate: AnyObject {
     func xcapViewDidCancelDrawingSession(_ xcapView: XcapView)
     func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool
     // ----- Selection -----
+    func xcapView(_ xcapView: XcapView, shouldSelect object: ObjectRenderer) -> Bool
     func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer])
     func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer])
     // ----- Edit -----
@@ -39,6 +40,7 @@ extension XcapViewDelegate {
     public func xcapViewDidCancelDrawingSession(_ xcapView: XcapView) {}
     public func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool { false }
     // ----- Selection -----
+    func xcapView(_ xcapView: XcapView, shouldSelect object: ObjectRenderer) -> Bool { true }
     public func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer]) {}
     public func xcapView(_ xcapView: XcapView, didDeselectObjects objects: [ObjectRenderer]) {}
     // ----- Edit -----
@@ -504,7 +506,7 @@ open class XcapView: PlatformView, SettingsInspector {
     open override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
         
-        guard let location = touches.first?.location(in: self) else {
+        guard touches.count == 1, let location = touches.first?.location(in: self) else {
             return
         }
         
@@ -697,8 +699,9 @@ open class XcapView: PlatformView, SettingsInspector {
     
     /// No Redraw
     private func internalSelectObjects(_ objects: [ObjectRenderer], byExtendingSelection extends: Bool = false) {
-        let newSelection = objects.filter {
-            !selectedObjects.contains($0)
+        let newSelection = objects.filter { object in
+            let isSelectable = delegate?.xcapView(self, shouldSelect: object) ?? true
+            return isSelectable && !selectedObjects.contains(object)
         }
         let removedSelection: [ObjectRenderer] = {
             guard !extends else {
