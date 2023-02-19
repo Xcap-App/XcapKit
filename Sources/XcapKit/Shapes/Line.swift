@@ -22,12 +22,14 @@ public struct Line: Equatable, Hashable, Codable {
     }
     
     public var mid: CGPoint {
-        CGPoint(x: (start.x + end.x) / 2,
-                y: (start.y + end.y) / 2)
+        CGPoint(
+            x: (start.x + end.x) / 2,
+            y: (start.y + end.y) / 2
+        )
     }
     
-    public var distance: CGFloat {
-        sqrt(dx * dx + dy * dy)
+    public var length: CGFloat {
+        hypot(dx, dy)
     }
     
     public var angle: CGFloat {
@@ -60,6 +62,24 @@ public struct Line: Equatable, Hashable, Codable {
         return CGPoint(x: x, y: y)
     }
     
+    public func projectionPoint(_ point: CGPoint) -> CGPoint? {
+        guard length != 0 else {
+            return nil
+        }
+        
+        let lineVec = CGPoint(x: dx, y: dy)
+        let pointVec = CGPoint(x: point.x - start.x, y: point.y - start.y)
+        let scalarProjection = (
+            (pointVec.x * lineVec.x + pointVec.y * lineVec.y) /
+            (lineVec.x * lineVec.x + lineVec.y * lineVec.y)
+        )
+        
+        return  CGPoint(
+            x: start.x + scalarProjection * lineVec.x,
+            y: start.y + scalarProjection * lineVec.y
+        )
+    }
+    
     public func reversed() -> Line {
         Line(start: end, end: start)
     }
@@ -79,23 +99,6 @@ public struct Line: Equatable, Hashable, Codable {
     
     public mutating func rotate(angle: Angle) {
         self = rotated(angle: angle)
-    }
-    
-    public func projection(_ point: CGPoint) -> CGPoint? {
-        guard distance != 0 else {
-            return nil
-        }
-        
-        let A = start
-        let B = end
-        let C = point
-        let AC = CGPoint(x: C.x - A.x, y: C.y - A.y)
-        let AB = CGPoint(x: B.x - A.x, y: B.y - A.y)
-        let ACAB = AC.x * AB.x + AC.y * AB.y
-        let m = ACAB / (distance * distance)
-        let AD = CGPoint(x: AB.x * m, y: AB.y * m)
-        
-        return CGPoint(x: A.x + AD.x, y: A.y + AD.y)
     }
     
     public func contains(_ point: CGPoint) -> Bool {

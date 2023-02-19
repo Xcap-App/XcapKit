@@ -98,7 +98,7 @@ public struct Arc: Equatable, Hashable, Codable {
     public func contains(_ point: CGPoint, radius: CGFloat) -> Bool {
         let line = Line(start: center, end: point)
         
-        return line.distance <= radius && contains(line.angle)
+        return line.length <= radius && contains(line.angle)
     }
     
 }
