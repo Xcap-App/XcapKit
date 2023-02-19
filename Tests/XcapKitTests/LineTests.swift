@@ -49,8 +49,8 @@ class LineTests: XCTestCase {
         let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
         let line3 = Line(start: .init(x: 10, y: 0), end: CGPoint(x: 0, y: 10))
         
-        XCTAssertEqual(line.intersection(with: line2), .parallel)
-        XCTAssertEqual(line.intersection(with: line3), .cross(.init(x: 5, y: 5)))
+        XCTAssertEqual(line.intersectionPoint(line2), nil)
+        XCTAssertEqual(line.intersectionPoint(line3), .init(x: 5, y: 5))
     }
     
     func testLine_collides() {
