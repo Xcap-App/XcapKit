@@ -100,8 +100,8 @@ extension XcapView {
     
     public enum UndoAction {
         case addObjects
-        case removeObject
-        case draging
+        case removeObjects
+        case dragging
         case editing
     }
     
@@ -151,7 +151,7 @@ open class XcapView: PlatformView, SettingsInspector {
     
     // ----- Content Settings -----
     
-    @objc dynamic open var contentSize = CGSize.zero {
+    dynamic open var contentSize = CGSize.zero {
         didSet { contentSizeDidChange(oldValue) }
     }
     
@@ -1535,7 +1535,7 @@ extension XcapView {
             return
         }
         
-        let name = implicitUndoActionNames[.removeObject]
+        let name = implicitUndoActionNames[.removeObjects]
         
         registerUndoAction(name: name) { xcapView in
             let scaleFactor = xcapView.calcScaleFactor(from: contextSize, to: xcapView.contentSize)
@@ -1553,7 +1553,7 @@ extension XcapView {
             return
         }
         
-        let name = implicitUndoActionNames[.draging]
+        let name = implicitUndoActionNames[.dragging]
         
         registerUndoAction(name: name) { xcapView in
             let scaleFactor = xcapView.calcScaleFactor(from: contentSize, to: xcapView.contentSize)

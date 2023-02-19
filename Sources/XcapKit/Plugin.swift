@@ -43,7 +43,7 @@ open class Plugin: NSObject, SettingsInspector {
     
     // MARK: - Settings
     
-    @Setting dynamic open var isEnabled: Bool = false
+    @Setting dynamic open var isEnabled: Bool = true
     
     // MARK: - Life Cycle
     
@@ -62,7 +62,7 @@ open class Plugin: NSObject, SettingsInspector {
     }
     
     open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
-        priority != .overlay && priority != .underlay
+        false
     }
     
     open func update(in xcapView: XcapView, state: State) {

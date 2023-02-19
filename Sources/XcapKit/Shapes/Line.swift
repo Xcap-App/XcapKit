@@ -7,15 +7,6 @@
 
 import Foundation
 
-extension Line {
-    
-    public enum Intersection: Equatable {
-        case cross(CGPoint)
-        case parallel
-    }
-    
-}
-
 public struct Line: Equatable, Hashable, Codable {
     
     public var start: CGPoint
@@ -48,33 +39,25 @@ public struct Line: Equatable, Hashable, Codable {
         self.end = end
     }
     
-    public func intersection(with line: Line) -> Intersection {
-        func EQ(x: CGFloat, y: CGFloat) -> Bool {
-            let EPS: CGFloat = 1e-5
-            return abs(x - y) < EPS
+    public func intersectionPoint(_ line: Line) -> CGPoint? {
+        let a1 = self.start.y - self.end.y
+        let b1 = self.end.x - self.start.x
+        let c1 = self.start.x * self.end.y - self.end.x * self.start.y
+        
+        let a2 = line.start.y - line.end.y
+        let b2 = line.end.x - line.start.x
+        let c2 = line.start.x * line.end.y - line.end.x * line.start.y
+        
+        let det = a1 * b2 - a2 * b1
+        
+        guard det != 0 else {
+            return nil
         }
         
-        let line1 = self, line2 = line
-        let a1 = line1.end.y - line1.start.y
-        let a2 = line2.end.y - line2.start.y
-        let b1 = line1.start.x - line1.end.x
-        let b2 = line2.start.x - line2.end.x
-        let c1 = line1.end.x * line1.start.y - line1.start.x * line1.end.y
-        let c2 = line2.end.x * line2.start.y - line2.start.x * line2.end.y
+        let x = (b1 * c2 - b2 * c1) / det
+        let y = (a2 * c1 - a1 * c2) / det
         
-        guard !EQ(x: a1 * b2, y: b1 * a2) else {
-//            if EQ(x: (a1 + b1) * c2, y: (a2 + b2) * c1) {
-//                return .coincident;
-//            } else {
-//                return .parallel;
-//            }
-            return .parallel
-        }
-        
-        let point = CGPoint(x: (b2 * c1 - b1 * c2) / (a2 * b1 - a1 * b2),
-                            y: (a1 * c2 - a2 * c1) / (a2 * b1 - a1 * b2))
-        
-        return.cross(point);
+        return CGPoint(x: x, y: y)
     }
     
     public func reversed() -> Line {
