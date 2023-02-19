@@ -13,37 +13,23 @@ extension NSBezierPath {
     
     var cgPath: CGPath {
         let path = CGMutablePath()
-        let points = UnsafeMutablePointer<NSPoint>.allocate(capacity: 3)
+        var points = [CGPoint](repeating: .zero, count: 3)
         
-        if elementCount > 0 {
-            var didClosePath = true
-            
-            for index in 0..<elementCount {
-                let pathType = element(at: index, associatedPoints: points)
-                
-                switch pathType {
-                case .moveTo:
-                    path.move(to: points[0])
-                case .lineTo:
-                    path.addLine(to: points[0])
-                    didClosePath = false
-                case .curveTo:
-                    path.addCurve(to: points[2], control1: points[0], control2: points[1])
-                    didClosePath = false
-                case .closePath:
-                    path.closeSubpath()
-                    didClosePath = true
-                @unknown default:
-                    break
-                }
-            }
-            
-            if !didClosePath {
+        for i in 0..<elementCount {
+            let type = element(at: i, associatedPoints: &points)
+            switch type {
+            case .moveTo:
+                path.move(to: points[0])
+            case .lineTo:
+                path.addLine(to: points[0])
+            case .curveTo:
+                path.addCurve(to: points[2], control1: points[0], control2: points[1])
+            case .closePath:
                 path.closeSubpath()
+            @unknown default:
+                print("Unknown NSBezierPath element type")
             }
         }
-        
-        points.deallocate()
         
         return path
     }
