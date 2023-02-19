@@ -77,19 +77,19 @@ class LineTests: XCTestCase {
         }
         
         let line1 = Line(start: .zero, end: .init(x: 10, y: 10))
-        let p1 = line1.projection(.init(x: 10, y: 0))
+        let p1 = line1.projectionPoint(.init(x: 10, y: 0))
         XCTAssertEqual(erase(p1), .init(x: 5, y: 5))
         
         let line2 = Line(start: .zero, end: .init(x: -10, y: 10))
-        let p2 = line2.projection(.init(x: 0, y: 10))
+        let p2 = line2.projectionPoint(.init(x: 0, y: 10))
         XCTAssertEqual(erase(p2), .init(x: -5, y: 5))
         
         let line3 = Line(start: .zero, end: .init(x: -10, y: -10))
-        let p3 = line3.projection(.init(x: -10, y: 0))
+        let p3 = line3.projectionPoint(.init(x: -10, y: 0))
         XCTAssertEqual(erase(p3), .init(x: -5, y: -5))
         
         let line4 = Line(start: .zero, end: .init(x: 10, y: -10))
-        let p4 = line4.projection(.init(x: -10, y: 0))
+        let p4 = line4.projectionPoint(.init(x: -10, y: 0))
         XCTAssertEqual(erase(p4), .init(x: -5, y: 5))
     }
     
