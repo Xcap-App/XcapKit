@@ -452,10 +452,8 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     }
     
     open func selectionTest(rect: CGRect) -> Bool {
-        let selectionUtil = SelectionUtil(rect)
-        
-        return layout.contains { items in
-            selectionUtil.selects(linesBetween: items, isClosed: false)
+        layout.contains { items in
+            rect.selects(linesBetween: items, closed: false)
         }
     }
     
