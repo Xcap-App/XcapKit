@@ -17,7 +17,15 @@ public struct Angle: Equatable, Hashable, Codable {
         .init(degrees: degrees)
     }
     
+    public static func degrees(_ degrees: Int) -> Angle {
+        .init(degrees: degrees)
+    }
+    
     public static func radians(_ radians: CGFloat) -> Angle {
+        .init(radians: radians)
+    }
+    
+    public static func radians(_ radians: Int) -> Angle {
         .init(radians: radians)
     }
     
@@ -30,9 +38,17 @@ public struct Angle: Equatable, Hashable, Codable {
         self.degrees = degrees
     }
     
+    public init(degrees: Int) {
+        self.init(degrees: CGFloat(degrees))
+    }
+    
     public init(radians: CGFloat) {
         self.radians = radians
         self.degrees = radians / .pi * 180
+    }
+    
+    public init(radians: Int) {
+        self.init(radians: CGFloat(radians))
     }
     
 }
