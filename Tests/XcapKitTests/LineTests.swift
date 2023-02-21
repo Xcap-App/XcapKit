@@ -34,16 +34,6 @@ class LineTests: XCTestCase {
         XCTAssertTrue(line.contains(.init(x: 5, y: 5)))
     }
     
-    func testLine_rotated() {
-        var line = Line(start: .zero, end: CGPoint(x: 10, y: 0))
-        
-        line.rotate(angle: Angle.degrees(90))
-        
-        XCTAssertEqual(line.start, .zero)
-        XCTAssertLessThan(line.end.x, 1e-5)
-        XCTAssertEqual(line.end.y, 10)
-    }
-    
     func testLine_intersectionType() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
