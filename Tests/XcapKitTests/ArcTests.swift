@@ -3,7 +3,7 @@ import XCTest
 
 class ArcTests: XCTestCase {
     
-    func testArc_angle() {
+    func test_angle() {
         func degText(rad: CGFloat) -> String {
             "deg = \(Angle(radians: rad).degrees)"
         }
@@ -57,7 +57,7 @@ class ArcTests: XCTestCase {
         XCTAssertEqual(arc5.angle, Angle.degrees(135).radians, degText(rad: arc5.angle))
     }
     
-    func testArc_contains_angle() {
+    func test_contains_angle() {
         // 45 ~ -45
         let arc1 = Arc(center: .zero,
                        start: Angle.degrees(45).radians,
@@ -95,7 +95,7 @@ class ArcTests: XCTestCase {
         }
     }
     
-    func testArc_contains_point() {
+    func test_contains_point() {
         let eps = 1e-5
         let radius = 10.0
         
@@ -158,6 +158,27 @@ class ArcTests: XCTestCase {
             let point = arc3.center.extended(length: radius - eps, angle: angle.radians)
             XCTAssertFalse(arc3.contains(point, radius: radius), "deg=\(deg)")
         }
+    }
+    
+    func test_line_intersection_points() {
+        let arc = Arc(center: .zero, start: 0, end: .pi, clockwise: true)
+        let radius: CGFloat = 20
+        let lines = (0..<360).map { angle in
+            let angle = Angle.degrees(angle)
+            let end = arc.center.extended(length: radius, angle: angle.radians)
+            return Line(start: .zero, end: end)
+        }
+        let result1 = lines.filter { line in
+            arc.intersectionPoints(line, radius: radius).count == 1
+        }
+        
+        XCTAssertEqual(result1.count, 181) // 0 ~ 180
+        
+        let result2 = lines.filter { line in
+            arc.intersectionPoints(line, radius: radius).isEmpty
+        }
+        
+        XCTAssertEqual(result2.count, 179)
     }
     
 }
