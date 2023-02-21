@@ -18,6 +18,15 @@ extension CGRect {
         ]
     }
     
+    private var sides: [Line]  {
+        [
+            Line(start: CGPoint(x: minX, y: minY), end: CGPoint(x: minX, y: maxY)),
+            Line(start: CGPoint(x: maxX, y: minY), end: CGPoint(x: maxX, y: maxY)),
+            Line(start: CGPoint(x: minX, y: minY), end: CGPoint(x: maxX, y: minY)),
+            Line(start: CGPoint(x: minX, y: maxY), end: CGPoint(x: maxX, y: maxY))
+        ]
+    }
+    
     func pretty() -> CGRect {
         var rect = self
         
@@ -31,17 +40,10 @@ extension CGRect {
     
     // MARK: - Selection Tests
     
-    public func selects(_ line: Line) -> Bool {
+    public func selects(line: Line) -> Bool {
         guard !contains(line.mid) else {
             return true
         }
-        
-        let sides = [
-            Line(start: CGPoint(x: minX, y: minY), end: CGPoint(x: minX, y: maxY)),
-            Line(start: CGPoint(x: maxX, y: minY), end: CGPoint(x: maxX, y: maxY)),
-            Line(start: CGPoint(x: minX, y: minY), end: CGPoint(x: maxX, y: minY)),
-            Line(start: CGPoint(x: minX, y: maxY), end: CGPoint(x: maxX, y: maxY))
-        ]
         
         return sides.contains { line.collides(with: $0) }
     }
@@ -54,16 +56,16 @@ extension CGRect {
                 }
                 let j = (index + 1) % points.count
                 let line = Line(start: point, end: points[j])
-                return selects(line)
+                return selects(line: line)
             }
     }
     
-    public func selects(_ anotherRect: CGRect) -> Bool {
+    public func selects(rect anotherRect: CGRect) -> Bool {
         intersects(anotherRect) &&
         !anotherRect.contains(self)
     }
     
-    public func selects(_ circle: Circle) -> Bool {
+    public func selects(circle: Circle) -> Bool {
         guard corners.contains(where: { !circle.contains($0) }) else {
             return false
         }
@@ -84,59 +86,30 @@ extension CGRect {
         return dx * dx + dy * dy <= circle.radius * circle.radius
     }
     
-    public func selects(_ arc: Arc, radius: CGFloat) -> Bool {
+    public func selects(arc: Arc, radius: CGFloat, closed: Bool) -> Bool {
         // 1
-        
-        let numberOfCornersInPie = corners
-            .filter { point in
-                arc.contains(point, radius: radius)
-            }
-            .count
-        
-        guard numberOfCornersInPie == 0 else {
-            return numberOfCornersInPie != corners.count
-        }
-        
-        // 2
-        
-        let vertexAngles: [CGFloat] = [0, .pi / 2, .pi, -.pi / 2]
-        let vertices = vertexAngles.compactMap { angle -> CGPoint? in
-            guard arc.contains(angle) else {
-                return nil
-            }
-            return arc.center.extended(length: radius, angle: angle)
-        }
-        let isAnyVertexSelected = vertices.contains { vertex in
-            contains(vertex)
-        }
-        
-        guard !isAnyVertexSelected else {
+        if sides.contains(where: { side in
+            !arc.intersectionPoints(side, radius: radius).isEmpty
+        }) {
             return true
         }
         
-        //3
+        let startPoint = arc.center.extended(length: radius, angle: arc.start)
+        let endPoint = arc.center.extended(length: radius, angle: arc.end)
         
-        let radiusLines = [
-            Line(start: arc.center, end: arc.center.extended(length: radius, angle: arc.start)),
-            Line(start: arc.center, end: arc.center.extended(length: radius, angle: arc.end))
-        ]
-        let isAnyRadiusSelected = radiusLines.contains { line in
-            selects(line)
-        }
-        
-        guard !isAnyRadiusSelected else {
-            return true
+        // 3
+        guard closed else {
+            return contains(startPoint) || contains(endPoint)
         }
         
         // 4
+        let radiusLines = [
+            Line(start: arc.center, end: startPoint),
+            Line(start: arc.center, end: endPoint)
+        ]
         
-        let vertexRadiusLines = vertices
-            .map { point in
-                Line(start: arc.center, end: point)
-            }
-        
-        return vertexRadiusLines.contains { line in
-            selects(line)
+        return radiusLines.contains { line in
+            selects(line: line)
         }
     }
     

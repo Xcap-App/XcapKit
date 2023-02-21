@@ -41,6 +41,32 @@ public struct Line: Equatable, Hashable, Codable {
         self.end = end
     }
     
+    public func reversed() -> Line {
+        Line(start: end, end: start)
+    }
+    
+    public mutating func reverse() {
+        self = reversed()
+    }
+    
+    public func contains(_ point: CGPoint) -> Bool {
+        let a = (start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y)
+        let b = (end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y)
+        let c = (start.x - end.x) * (start.x - end.x) + (start.y - end.y) * (start.y - end.y)
+        
+        return (a + b + 2 * sqrt(a * b) - c < 1)
+    }
+    
+    public func collides(with line: Line) -> Bool {
+        let a1 = start.x - line.start.x
+        let a2 = start.y - line.start.y
+        let b1 = line.dy * dx - line.dx * dy
+        let uA = (line.dx * a2 - line.dy * a1) / b1
+        let uB = (dx * a2 - dy * a1) / b1
+        
+        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
+    }
+    
     public func intersectionPoint(_ line: Line) -> CGPoint? {
         let a1 = self.start.y - self.end.y
         let b1 = self.end.x - self.start.x
@@ -78,45 +104,6 @@ public struct Line: Equatable, Hashable, Codable {
             x: start.x + scalarProjection * lineVec.x,
             y: start.y + scalarProjection * lineVec.y
         )
-    }
-    
-    public func reversed() -> Line {
-        Line(start: end, end: start)
-    }
-    
-    public mutating func reverse() {
-        self = reversed()
-    }
-    
-    public func rotated(angle: Angle) -> Line {
-        let transform = CGAffineTransform.identity
-            .translatedBy(x: start.x, y: start.y)
-            .rotated(by: angle.radians)
-        let end = CGPoint(x: dx, y: dy)
-            .applying(transform)
-        return .init(start: start, end: end)
-    }
-    
-    public mutating func rotate(angle: Angle) {
-        self = rotated(angle: angle)
-    }
-    
-    public func contains(_ point: CGPoint) -> Bool {
-        let A = (start.x - point.x) * (start.x - point.x) + (start.y - point.y) * (start.y - point.y)
-        let B = (end.x - point.x) * (end.x - point.x) + (end.y - point.y) * (end.y - point.y)
-        let C = (start.x - end.x) * (start.x - end.x) + (start.y - end.y) * (start.y - end.y)
-        
-        return (A + B + 2 * sqrt(A * B) - C < 1)
-    }
-    
-    public func collides(with line: Line) -> Bool {
-        let a1 = start.x - line.start.x
-        let a2 = start.y - line.start.y
-        let b1 = line.dy * dx - line.dx * dy
-        let uA = (line.dx * a2 - line.dy * a1) / b1
-        let uB = (dx * a2 - dy * a1) / b1
-        
-        return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
     }
     
 }
