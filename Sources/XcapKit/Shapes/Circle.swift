@@ -33,6 +33,57 @@ public struct Circle: Equatable, Hashable, Codable {
         return dx * dx + dy * dy <= radius * radius
     }
     
+    public func intersectionPoints(_ line: Line) -> [CGPoint] {
+        guard line.length > 0 else {
+            return []
+        }
+        
+        let dx = line.dx
+        let dy = line.dy
+        let a = dx * dx + dy * dy
+        let b = 2 * (dx * (line.start.x - center.x) + dy * (line.start.y - center.y))
+        let c = (
+            center.x * center.x +
+            center.y * center.y +
+            line.start.x * line.start.x +
+            line.start.y * line.start.y -
+            2 * (center.x * line.start.x + center.y * line.start.y) -
+            radius * radius
+        )
+        let delta = b * b - 4 * a * c
+        var intersections = [CGPoint]()
+        
+        guard delta >= 0 else {
+            return []
+        }
+        
+        if delta == 0 {
+            let t = -b / (2 * a)
+            let x = line.start.x + t * dx
+            let y = line.start.y + t * dy
+            
+            intersections.append(CGPoint(x: x, y: y))
+        } else {
+            let t1 = (-b + sqrt(delta)) / (2 * a)
+            let x1 = line.start.x + t1 * dx
+            let y1 = line.start.y + t1 * dy
+            
+            intersections.append(CGPoint(x: x1, y: y1))
+            
+            let t2 = (-b - sqrt(delta)) / (2 * a)
+            let x2 = line.start.x + t2 * dx
+            let y2 = line.start.y + t2 * dy
+            
+            intersections.append(CGPoint(x: x2, y: y2))
+        }
+        
+        intersections = intersections.filter { point in
+            line.contains(point)
+        }
+        
+        return intersections
+    }
+    
 }
 
 // MARK: - 3-Point Circle
