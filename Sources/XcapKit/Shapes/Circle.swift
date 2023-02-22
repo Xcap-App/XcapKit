@@ -50,27 +50,27 @@ public struct Circle: Equatable, Hashable, Codable {
             2 * (center.x * line.start.x + center.y * line.start.y) -
             radius * radius
         )
-        let delta = b * b - 4 * a * c
+        let discriminant = b * b - 4 * a * c
         var intersections = [CGPoint]()
         
-        guard delta >= 0 else {
+        guard discriminant >= 0 else {
             return []
         }
         
-        if delta == 0 {
+        if discriminant == 0 {
             let t = -b / (2 * a)
             let x = line.start.x + t * dx
             let y = line.start.y + t * dy
             
             intersections.append(CGPoint(x: x, y: y))
         } else {
-            let t1 = (-b + sqrt(delta)) / (2 * a)
+            let t1 = (-b + sqrt(discriminant)) / (2 * a)
             let x1 = line.start.x + t1 * dx
             let y1 = line.start.y + t1 * dy
             
             intersections.append(CGPoint(x: x1, y: y1))
             
-            let t2 = (-b - sqrt(delta)) / (2 * a)
+            let t2 = (-b - sqrt(discriminant)) / (2 * a)
             let x2 = line.start.x + t2 * dx
             let y2 = line.start.y + t2 * dy
             

@@ -3,7 +3,7 @@ import XCTest
 
 final class ObjectLayoutTests: XCTestCase {
     
-    func testLayout() {
+    func test_layout() {
         var layout = ObjectLayout()
 
         let section1: [[CGPoint]] = [[.zero]]
