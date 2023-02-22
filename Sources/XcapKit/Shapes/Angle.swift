@@ -13,22 +13,6 @@ public struct Angle: Equatable, Hashable, Codable {
         lhs.radians == rhs.radians
     }
     
-    public static func degrees(_ degrees: CGFloat) -> Angle {
-        .init(degrees: degrees)
-    }
-    
-    public static func degrees(_ degrees: Int) -> Angle {
-        .init(degrees: degrees)
-    }
-    
-    public static func radians(_ radians: CGFloat) -> Angle {
-        .init(radians: radians)
-    }
-    
-    public static func radians(_ radians: Int) -> Angle {
-        .init(radians: radians)
-    }
-    
     public let radians: CGFloat
     
     public let degrees: CGFloat
@@ -49,6 +33,22 @@ public struct Angle: Equatable, Hashable, Codable {
     
     public init(radians: Int) {
         self.init(radians: CGFloat(radians))
+    }
+    
+    public static func degrees(_ degrees: CGFloat) -> Angle {
+        .init(degrees: degrees)
+    }
+    
+    public static func degrees(_ degrees: Int) -> Angle {
+        .init(degrees: degrees)
+    }
+    
+    public static func radians(_ radians: CGFloat) -> Angle {
+        .init(radians: radians)
+    }
+    
+    public static func radians(_ radians: Int) -> Angle {
+        .init(radians: radians)
     }
     
 }

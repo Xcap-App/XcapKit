@@ -25,11 +25,11 @@ public struct Arc: Equatable, Hashable, Codable {
             swap(&start, &end)
         }
         
-        if start >= end {
-            return start - end
-        } else {
-            return .pi * 2 - (end - start)
-        }
+        return (
+            start >= end
+            ? start - end
+            : .pi * 2 - (end - start)
+        )
     }
     
     public init(center: CGPoint, start: CGFloat, end: CGFloat, clockwise: Bool) {

@@ -4,7 +4,7 @@ import XCTest
 
 class LineTests: XCTestCase {
     
-    func testLine_Hashable() {
+    func test_hashable() {
         let line1 = Line(start: .zero, end: .init(x: 0, y: 0))
         let line2 = Line(start: .zero, end: .init(x: 1, y: 0))
         let line3 = Line(start: .zero, end: .init(x: 2, y: 0))
@@ -19,7 +19,7 @@ class LineTests: XCTestCase {
         XCTAssertEqual(dict[line3], 2)
     }
     
-    func testLine_vars() {
+    func test_vars() {
         let line1 = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         
         XCTAssertEqual(line1.dx, 10)
@@ -28,13 +28,13 @@ class LineTests: XCTestCase {
         XCTAssertEqual(Angle.radians(line1.angle), Angle.degrees(45))
     }
     
-    func testLine_contains() {
+    func test_contains() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         
         XCTAssertTrue(line.contains(.init(x: 5, y: 5)))
     }
     
-    func testLine_intersectionType() {
+    func test_intersectionType() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
         let line3 = Line(start: .init(x: 10, y: 0), end: CGPoint(x: 0, y: 10))
@@ -43,7 +43,7 @@ class LineTests: XCTestCase {
         XCTAssertEqual(line.intersectionPoint(line3), .init(x: 5, y: 5))
     }
     
-    func testLine_collides() {
+    func test_collides() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
         let line3 = Line(start: .init(x: 10, y: 0), end: CGPoint(x: 0, y: 10))
@@ -52,7 +52,7 @@ class LineTests: XCTestCase {
         XCTAssertTrue(line.collides(with: line3))
     }
     
-    func testLine_projection() {
+    func test_projection() {
         func erase(_ point: CGPoint?) -> CGPoint? {
             guard let point = point else {
                 return nil
@@ -81,6 +81,10 @@ class LineTests: XCTestCase {
         let line4 = Line(start: .zero, end: .init(x: 10, y: -10))
         let p4 = line4.projectionPoint(.init(x: -10, y: 0))
         XCTAssertEqual(erase(p4), .init(x: -5, y: 5))
+        
+        let line5 = Line(start: .zero, end: .zero)
+        let p5 = line5.projectionPoint(.zero)
+        XCTAssertNil(p5)
     }
     
 }

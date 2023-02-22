@@ -38,7 +38,7 @@ class SectionsOf2: ObjectRenderer {
 
 final class ObjectRendererTests: XCTestCase {
     
-    func testObjectRenderer() {
+    func test_object_renderer() {
         let object = TestRenderer()
         let item1 = CGPoint(x: 0, y: 0)
         let item2 = CGPoint(x: 10, y: 10)
@@ -81,7 +81,7 @@ final class ObjectRendererTests: XCTestCase {
         XCTAssertEqual(object.layout.data, [[.zero, .init(x: -10, y: 10)]])
     }
     
-    func testObjectRender_SingleSection() {
+    func test_single_section() {
         let lineSeg = LineSegment()
         
         XCTAssertTrue(lineSeg.canPush())
@@ -105,7 +105,7 @@ final class ObjectRendererTests: XCTestCase {
         XCTAssertEqual(lineSeg.layout.data, [[.zero, .zero]])
     }
     
-    func testObjectRenderer_MultiSection() {
+    func test_multi_section() {
         let secsOf2 = SectionsOf2()
         
         XCTAssertTrue(secsOf2.canPush())
@@ -139,7 +139,7 @@ final class ObjectRendererTests: XCTestCase {
         XCTAssertEqual(secsOf2.layout.data, [[.zero, .zero], [.zero, .zero]])
     }
     
-    func testObjectRenderer_Undo() {
+    func test_undo_redo() {
         let object = ObjectRenderer()
         let undoManager = UndoManager()
         

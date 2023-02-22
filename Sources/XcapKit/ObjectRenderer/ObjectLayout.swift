@@ -114,33 +114,3 @@ extension ObjectLayout: BidirectionalCollection {
     }
     
 }
-
-extension ObjectLayout: CustomStringConvertible {
-    
-    public var description: String {
-        var desc: String = ""
-        
-        desc += "["
-        
-        if !isEmpty {
-            desc += "\n"
-        }
-        
-        for (i, items) in self.enumerated() {
-            let last = i == self.count - 1
-            
-            desc += "  [Section \(i)] = [\n"
-            
-            for (j, item) in items.enumerated() {
-                desc += "    [Section \(i), Item \(j)] = (\(item.x), \(item.y))\n"
-            }
-            
-            desc += last ? "  ]\n" : "  ],\n"
-        }
-        
-        desc += "]"
-        
-        return desc
-    }
-    
-}

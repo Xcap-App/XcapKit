@@ -1,7 +1,7 @@
 import XCTest
 @testable import XcapKit
 
-class CustomTypesTests: XCTestCase {
+class CircleTests: XCTestCase {
     
     func test_hashable() {
         let circle1 = Circle(center: .zero, radius: 0)
@@ -18,7 +18,7 @@ class CustomTypesTests: XCTestCase {
         XCTAssertEqual(dict[circle3], 2)
     }
     
-    func test_initWith3Points() {
+    func test_init_with_3_points() {
         XCTAssertNil(Circle(.zero, .zero, .zero))
         XCTAssertNil(Circle(.init(x: -10, y: 0), .init(x: 0, y: 0), .init(x: 10, y: 0)))
         XCTAssertNil(Circle(.init(x: 0, y: 10), .init(x: 0, y: 0), .init(x: 0, y: -10)))
@@ -44,6 +44,13 @@ class CustomTypesTests: XCTestCase {
     
     func test_line_intersection_points() {
         let circle = Circle(center: .zero, radius: 20)
+        
+        // 1 Intersection
+        let line_1_intersection = Line(start: .init(x: -10, y: 20), end: .init(x: 10, y: 20))
+        let result0 = circle.intersectionPoints(line_1_intersection)
+        
+        XCTAssertEqual(result0.first, .init(x: 0, y: 20))
+        XCTAssertTrue(result0.count == 1)
         
         // 1 Intersection
         let lines_1_intersection = (0..<360).map { angle in
@@ -112,6 +119,11 @@ class CustomTypesTests: XCTestCase {
         }
         
         XCTAssertTrue(result4)
+        
+        // No Intersection
+        let line_no_intersection = Line(start: .zero, end: .zero)
+        let result5 = circle.intersectionPoints(line_no_intersection)
+        XCTAssertTrue(result5.isEmpty)
     }
     
 }

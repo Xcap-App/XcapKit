@@ -3,8 +3,8 @@ import XCTest
 
 class AngleTests: XCTestCase {
     
-    func testAngle() {
-        let deg = Angle.degrees(90)
+    func test_angle() {
+        let deg = Angle.degrees(90.0)
         let rad = Angle.radians(.pi / 2)
         
         XCTAssertEqual(deg, rad)
