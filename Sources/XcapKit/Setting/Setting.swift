@@ -10,6 +10,8 @@ import Foundation
 @propertyWrapper
 public final class Setting<Value>: AnySetting {
     
+    // MARK: - Private
+    
     private var changeHandlers: [(token: String, changeHandelr: (Value) -> Void)] = []
     
     weak var undoManager: UndoManager?
@@ -17,6 +19,8 @@ public final class Setting<Value>: AnySetting {
     var valueWillChange: (() -> Void)?
     
     var valueDidChange: (() -> Void)?
+    
+    // MARK: - Public
     
     public var undoMode: UndoMode
     
@@ -27,7 +31,7 @@ public final class Setting<Value>: AnySetting {
             valueWillChange?()
         }
         didSet {
-            registerUndoActionIfNeeded(oldValue: oldValue)
+            registerUndoAction(undoValue: oldValue)
             
             valueDidChange?()
             
@@ -41,6 +45,8 @@ public final class Setting<Value>: AnySetting {
         self
     }
     
+    // MARK: - Life Cycle
+    
     deinit {
         changeHandlers.removeAll()
         
@@ -53,13 +59,15 @@ public final class Setting<Value>: AnySetting {
         self.redrawMode = redrawMode
     }
     
-    private func registerUndoActionIfNeeded(oldValue: Value) {
+    // MARK: - Undo
+    
+    private func registerUndoAction(undoValue: Value) {
         guard case let .enable(name) = undoMode, let undoManager = undoManager else {
             return
         }
         
         undoManager.registerUndo(withTarget: self) { state in
-            state.wrappedValue = oldValue
+            state.wrappedValue = undoValue
         }
         
         if let name = name {
@@ -67,7 +75,9 @@ public final class Setting<Value>: AnySetting {
         }
     }
     
-    func observe(options: SettingObservationOptions, changeHandler: @escaping (Value) -> Void) -> SettingObservation {
+    // MARK: - Observation
+    
+    func observe(options: SettingObservation.Options, changeHandler: @escaping (Value) -> Void) -> SettingObservation {
         let token = UUID().uuidString
         let observation = SettingObservation(token: token) { [weak self] token in
             guard let self = self,

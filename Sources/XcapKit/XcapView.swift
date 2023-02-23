@@ -98,7 +98,7 @@ extension XcapView {
         case plugin(Plugin)
     }
     
-    public enum UndoAction {
+    public enum ImplicitUndoAction {
         case addObjects
         case removeObjects
         case dragging
@@ -107,7 +107,6 @@ extension XcapView {
     
 }
 
-@objcMembers
 open class XcapView: PlatformView, SettingsMonitor {
     
     #if os(macOS)
@@ -132,13 +131,13 @@ open class XcapView: PlatformView, SettingsMonitor {
     
     open private(set) var contentScaleFactors: (toContent: CGPoint, toView: CGPoint) = (.zero, .zero)
     
-    dynamic open private(set) var contentRect = CGRect.zero
+    @objc dynamic open private(set) var contentRect = CGRect.zero
     
-    dynamic open private(set) var objects: [ObjectRenderer] = []
+    @objc dynamic open private(set) var objects: [ObjectRenderer] = []
     
-    dynamic open private(set) var selectedObjects: [ObjectRenderer] = []
+    @objc dynamic open private(set) var selectedObjects: [ObjectRenderer] = []
     
-    dynamic open private(set) var currentObject: ObjectRenderer?
+    @objc dynamic open private(set) var currentObject: ObjectRenderer?
     
     /// Do NOT modify object during drawing session.
     open var state: State {
@@ -151,7 +150,7 @@ open class XcapView: PlatformView, SettingsMonitor {
     
     // ----- Content Settings -----
     
-    dynamic open var contentSize = CGSize.zero {
+    @objc dynamic open var contentSize = CGSize.zero {
         didSet { contentSizeDidChange(oldValue) }
     }
     
@@ -207,7 +206,7 @@ open class XcapView: PlatformView, SettingsMonitor {
     
     // ----- Undo Settings -----
     
-    open var implicitUndoActionNames: [UndoAction: String] = [:]
+    open var implicitUndoActionNames: [ImplicitUndoAction: String] = [:]
     
     // ----- Plugin Settings -----
     

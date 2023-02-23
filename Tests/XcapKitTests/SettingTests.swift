@@ -31,11 +31,11 @@ class SettingTests: XCTestCase {
     }
     
     func test_observation() {
-        class SettingsManager: SettingsMonitor {
+        class TestObject: SettingsMonitor {
             
             let undoManager: UndoManager? = .init()
             
-            @Setting var setting = 0
+            @Setting var value = 0
             
             init() {
                 registerSettings {
@@ -46,30 +46,23 @@ class SettingTests: XCTestCase {
         }
         
         let expectation = XCTestExpectation()
-        expectation.expectedFulfillmentCount = 4
+        let expectedValues = [0, 3, 0, 3]
+        var values: [Int] = []
         
-        var numberOfFullfillment = 0
-        let observable = SettingsManager()
-        let observation = observable.$setting.observe(options: [.initial, .new]) { value in
-            if numberOfFullfillment == 0 && value == 0 {
-                expectation.fulfill()
-                numberOfFullfillment += 1
-            } else if numberOfFullfillment == 1 && value == 3 {
-                expectation.fulfill()
-                numberOfFullfillment += 1
-            } else if numberOfFullfillment == 2 && value == 0 {
-                expectation.fulfill()
-                numberOfFullfillment += 1
-            } else if numberOfFullfillment == 3 && value == 3 {
+        let object = TestObject()
+        let observation = object.observeSetting(\.$value) { value in
+            values.append(value)
+            
+            if values == expectedValues {
                 expectation.fulfill()
             }
         }
         
-        observable.setting = 3
-        observable.undoManager?.undo()
-        observable.undoManager?.redo()
+        object.value = 3
+        object.undoManager?.undo()
+        object.undoManager?.redo()
         
-        wait(for: [expectation], timeout: 1)
+        wait(for: [expectation], timeout: 0)
         
         _ = observation
     }

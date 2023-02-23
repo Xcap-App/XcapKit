@@ -2,10 +2,27 @@
 //  SettingObservation.swift
 //  
 //
-//  Created by 陳世爵 on 2023/2/23.
+//  Created by scchn on 2023/2/23.
 //
 
 import Foundation
+
+extension SettingObservation {
+    
+    public struct Options: OptionSet {
+        
+        public var rawValue: Int
+        
+        public init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+        
+        public static let initial = Options(rawValue: 1 << 0)
+        public static let new     = Options(rawValue: 1 << 1)
+        
+    }
+    
+}
 
 public class SettingObservation {
     
