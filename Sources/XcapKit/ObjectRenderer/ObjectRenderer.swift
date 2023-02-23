@@ -132,14 +132,13 @@ extension ObjectRenderer {
     
 }
 
-@objcMembers
-open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
+open class ObjectRenderer: NSObject, Codable, Drawable, SettingsMonitor {
     
     private var preliminaryGraphics: [Drawable] = []
     
     private var mainGraphics: [Drawable] = []
     
-    var undoManager: UndoManager?
+    public internal(set) weak var undoManager: UndoManager?
     
     // MARK: - Data
     
@@ -185,19 +184,23 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     open private(set) var rotationAngle = Angle.radians(0)
     
     /// Default = Black
-    @Setting dynamic open var strokeColor: PlatformColor = .black
+    @Setting open var strokeColor: PlatformColor = .black
     
     /// Default = White
-    @Setting dynamic open var fillColor: PlatformColor = .white
+    @Setting open var fillColor: PlatformColor = .white
     
     /// Default = 1
-    @Setting dynamic open var lineWidth: CGFloat = 1
+    @Setting open var lineWidth: CGFloat = 1
     
     // MARK: - Events
     
     var redrawHandler: (() -> Void)?
     
     // MARK: - Life Cycle
+    
+    deinit {
+        undoManager?.removeAllActions(withTarget: self)
+    }
     
     public required override init() {
         super.init()

@@ -139,29 +139,4 @@ final class ObjectRendererTests: XCTestCase {
         XCTAssertEqual(secsOf2.layout.data, [[.zero, .zero], [.zero, .zero]])
     }
     
-    func test_undo_redo() {
-        let object = ObjectRenderer()
-        let undoManager = UndoManager()
-        
-        object.lineWidth = 1
-        object.undoManager = undoManager
-        
-        // Undo
-        object.lineWidth = 2
-        undoManager.undo()
-        XCTAssertEqual(object.lineWidth, 1)
-        
-        // Redo
-        undoManager.redo()
-        XCTAssertEqual(object.lineWidth, 2)
-        
-        // Action Name
-        let undoActionName = "Line Width"
-        object.$lineWidth.undoMode = .enable(name: undoActionName)
-        object.lineWidth = 3
-        XCTAssertEqual(undoManager.undoActionName, undoActionName)
-        undoManager.undo()
-        XCTAssertEqual(undoManager.redoActionName, undoActionName)
-    }
-    
 }

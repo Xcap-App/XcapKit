@@ -28,6 +28,17 @@ class LineTests: XCTestCase {
         XCTAssertEqual(Angle.radians(line1.angle), Angle.degrees(45))
     }
     
+    func test_reversed() {
+        let start = CGPoint(x: 0, y: 0)
+        let end = CGPoint(x: 1, y: 1)
+        var line = Line(start: start, end: end)
+        
+        line.reverse()
+        
+        XCTAssertEqual(line.start, end)
+        XCTAssertEqual(line.end, start)
+    }
+    
     func test_contains() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         
