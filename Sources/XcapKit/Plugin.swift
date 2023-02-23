@@ -28,7 +28,6 @@ extension Plugin {
     
 }
 
-@objcMembers
 open class Plugin: NSObject, SettingsMonitor {
     
     public internal(set) weak var undoManager: UndoManager?
@@ -43,7 +42,7 @@ open class Plugin: NSObject, SettingsMonitor {
     
     // MARK: - Settings
     
-    @Setting dynamic open var isEnabled: Bool = true
+    @Setting open var isEnabled: Bool = true
     
     // MARK: - Life Cycle
     

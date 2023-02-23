@@ -155,37 +155,37 @@ open class XcapView: PlatformView, SettingsMonitor {
         didSet { contentSizeDidChange(oldValue) }
     }
     
-    @Setting dynamic open var contentBackgroundColor: PlatformColor?
+    @Setting open var contentBackgroundColor: PlatformColor?
     
     // ----- Selection Settings -----
     
-    @Setting dynamic open var selectionRange: CGFloat = 10 {
+    @Setting open var selectionRange: CGFloat = 10 {
         didSet { updateContentInfo() }
     }
     
-    @Setting dynamic open var selectionRectCornerRadius: CGFloat = 0
+    @Setting open var selectionRectCornerRadius: CGFloat = 0
     
-    @Setting dynamic open var selectionRectBorderColor: PlatformColor = .lightGray
+    @Setting open var selectionRectBorderColor: PlatformColor = .lightGray
     
-    @Setting dynamic open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
+    @Setting open var selectionRectFillColor: PlatformColor = .cyan.withAlphaComponent(0.2)
     
     // ----- Drawing Session Settings -----
     
-    @Setting dynamic open var drawingSessionLineWidth: CGFloat = 1
+    @Setting open var drawingSessionLineWidth: CGFloat = 1
     
-    @Setting dynamic open var drawingSessionStrokeColor: PlatformColor = .black
+    @Setting open var drawingSessionStrokeColor: PlatformColor = .black
     
-    @Setting dynamic open var drawingSessionFillColor: PlatformColor = .white
+    @Setting open var drawingSessionFillColor: PlatformColor = .white
     
     // ----- Object Item Settings -----
     
-    @Setting dynamic open var objectItemBorderColor: PlatformColor = .black
+    @Setting open var objectItemBorderColor: PlatformColor = .black
     
-    @Setting dynamic open var objectItemFillColor: PlatformColor = .white
+    @Setting open var objectItemFillColor: PlatformColor = .white
     
-    @Setting dynamic open var objectItemHighlightBorderColor: PlatformColor = .black
+    @Setting open var objectItemHighlightBorderColor: PlatformColor = .black
     
-    @Setting dynamic open var objectItemHighlightFillColor: PlatformColor = {
+    @Setting open var objectItemHighlightFillColor: PlatformColor = {
         #if os(macOS)
         return .controlAccentColor
         #else
@@ -195,15 +195,15 @@ open class XcapView: PlatformView, SettingsMonitor {
     
     // ----- Object Bounding Box Settings -----
     
-    @Setting dynamic open var objectBoundingBoxCornerRadius: CGFloat = 4
+    @Setting open var objectBoundingBoxCornerRadius: CGFloat = 4
     
-    @Setting dynamic open var objectBoundingBoxBorderColor: PlatformColor = .black
+    @Setting open var objectBoundingBoxBorderColor: PlatformColor = .black
     
-    @Setting dynamic open var objectBoundingBoxFillColor: PlatformColor = .clear
+    @Setting open var objectBoundingBoxFillColor: PlatformColor = .clear
     
-    @Setting dynamic open var objectBoundingBoxHighlightBorderColor: PlatformColor = .black
+    @Setting open var objectBoundingBoxHighlightBorderColor: PlatformColor = .black
     
-    @Setting dynamic open var objectBoundingBoxHighlightFillColor: PlatformColor = .cyan.withAlphaComponent(0.3)
+    @Setting open var objectBoundingBoxHighlightFillColor: PlatformColor = .cyan.withAlphaComponent(0.3)
     
     // ----- Undo Settings -----
     

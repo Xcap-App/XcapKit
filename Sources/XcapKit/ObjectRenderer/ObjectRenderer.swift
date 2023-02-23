@@ -132,7 +132,6 @@ extension ObjectRenderer {
     
 }
 
-@objcMembers
 open class ObjectRenderer: NSObject, Codable, Drawable, SettingsMonitor {
     
     private var preliminaryGraphics: [Drawable] = []
@@ -185,13 +184,13 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsMonitor {
     open private(set) var rotationAngle = Angle.radians(0)
     
     /// Default = Black
-    @Setting dynamic open var strokeColor: PlatformColor = .black
+    @Setting open var strokeColor: PlatformColor = .black
     
     /// Default = White
-    @Setting dynamic open var fillColor: PlatformColor = .white
+    @Setting open var fillColor: PlatformColor = .white
     
     /// Default = 1
-    @Setting dynamic open var lineWidth: CGFloat = 1
+    @Setting open var lineWidth: CGFloat = 1
     
     // MARK: - Events
     
