@@ -133,13 +133,13 @@ extension ObjectRenderer {
 }
 
 @objcMembers
-open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
+open class ObjectRenderer: NSObject, Codable, Drawable, SettingsMonitor {
     
     private var preliminaryGraphics: [Drawable] = []
     
     private var mainGraphics: [Drawable] = []
     
-    var undoManager: UndoManager?
+    public internal(set) weak var undoManager: UndoManager?
     
     // MARK: - Data
     
@@ -198,6 +198,10 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingsInspector {
     var redrawHandler: (() -> Void)?
     
     // MARK: - Life Cycle
+    
+    deinit {
+        undoManager?.removeAllActions(withTarget: self)
+    }
     
     public required override init() {
         super.init()

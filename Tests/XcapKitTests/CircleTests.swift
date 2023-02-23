@@ -121,9 +121,14 @@ class CircleTests: XCTestCase {
         XCTAssertTrue(result4)
         
         // No Intersection
-        let line_no_intersection = Line(start: .zero, end: .zero)
-        let result5 = circle.intersectionPoints(line_no_intersection)
+        let line_no_intersection_1 = Line(start: .zero, end: .zero)
+        let result5 = circle.intersectionPoints(line_no_intersection_1)
         XCTAssertTrue(result5.isEmpty)
+        
+        // No Intersection
+        let line_no_intersection_2 = Line(start: .init(x: -100, y: 21), end: .init(x: 100, y: 21))
+        let result6 = circle.intersectionPoints(line_no_intersection_2)
+        XCTAssertTrue(result6.isEmpty)
     }
     
 }

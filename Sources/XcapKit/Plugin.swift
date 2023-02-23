@@ -29,9 +29,9 @@ extension Plugin {
 }
 
 @objcMembers
-open class Plugin: NSObject, SettingsInspector {
+open class Plugin: NSObject, SettingsMonitor {
     
-    var undoManager: UndoManager?
+    public internal(set) weak var undoManager: UndoManager?
     
     var redrawHandler: (() -> Void)?
     

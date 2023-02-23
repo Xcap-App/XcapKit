@@ -108,7 +108,7 @@ extension XcapView {
 }
 
 @objcMembers
-open class XcapView: PlatformView, SettingsInspector {
+open class XcapView: PlatformView, SettingsMonitor {
     
     #if os(macOS)
     private var trackingArea: NSTrackingArea?
