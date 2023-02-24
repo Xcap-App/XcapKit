@@ -13,7 +13,7 @@ public protocol SettingsMonitor: AnyObject {
 
 extension SettingsMonitor {
     
-    public func registerSettings(_ settingDidChange: @escaping () -> Void) {
+    public func registerSettings(_ settingChangeHandler: (() -> Void)? = nil) {
         let properties = Mirror(reflecting: self).properties(ofType: AnySetting.self)
         
         for (_, value) in properties {
@@ -26,11 +26,14 @@ extension SettingsMonitor {
             }
             
             value.valueDidChange = { [weak value] in
-                guard let value = value, value.redrawMode == .enable else {
+                guard let value = value,
+                      let changeHandler = settingChangeHandler,
+                      value.redrawMode == .enable
+                else {
                     return
                 }
                 
-                settingDidChange()
+                changeHandler()
             }
         }
     }
