@@ -132,7 +132,7 @@ extension ObjectRenderer {
     
 }
 
-open class ObjectRenderer: NSObject, Codable, Drawable, SettingsMonitor {
+open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     
     private var preliminaryGraphics: [Drawable] = []
     
