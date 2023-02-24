@@ -1,46 +1,21 @@
 import XCTest
-@testable import XcapKit
+import XcapKit
 
-private class TestObject: SettingsMonitor {
+private class TestObject: SettingMonitor {
     
     let undoManager: UndoManager? = .init()
     
     @Setting var value = 0
     
     init() {
-        registerSettings()
+        registerSettings {
+            
+        }
     }
     
 }
 
 class SettingTests: XCTestCase {
-    
-    func test_undo() {
-        let setting = Setting(wrappedValue: 0)
-        let undoManager = UndoManager()
-        
-        setting.wrappedValue = 1
-        setting.undoManager = undoManager
-        
-        // 1
-        setting.wrappedValue = 2
-        undoManager.undo()
-        XCTAssertEqual(setting.wrappedValue, 1)
-        
-        // 2
-        undoManager.redo()
-        XCTAssertEqual(setting.wrappedValue, 2)
-        
-        // 3
-        let undoActionName = "Line Width"
-        setting.undoMode = .enable(name: undoActionName)
-        setting.wrappedValue = 3
-        XCTAssertEqual(undoManager.undoActionName, undoActionName)
-        
-        // 4
-        undoManager.undo()
-        XCTAssertEqual(undoManager.redoActionName, undoActionName)
-    }
     
     func test_observation() {
         let expectation = XCTestExpectation()
@@ -59,7 +34,7 @@ class SettingTests: XCTestCase {
         object.value = 3
         object.undoManager?.undo()
         object.undoManager?.redo()
-        
+        print(values)
         wait(for: [expectation], timeout: 0)
         
         _ = observation

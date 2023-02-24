@@ -107,7 +107,7 @@ extension XcapView {
     
 }
 
-open class XcapView: PlatformView, SettingsMonitor {
+open class XcapView: PlatformView, SettingMonitor {
     
     #if os(macOS)
     private var trackingArea: NSTrackingArea?
@@ -137,7 +137,7 @@ open class XcapView: PlatformView, SettingsMonitor {
     
     @objc dynamic open private(set) var selectedObjects: [ObjectRenderer] = []
     
-    @objc dynamic open private(set) var currentObject: ObjectRenderer?
+    @objc dynamic open private(set) var currentObject: ObjectRenderer? = nil
     
     /// Do NOT modify object during drawing session.
     open var state: State {

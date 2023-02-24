@@ -28,7 +28,7 @@ extension Plugin {
     
 }
 
-open class Plugin: NSObject, SettingsMonitor {
+open class Plugin: NSObject, SettingMonitor {
     
     public internal(set) weak var undoManager: UndoManager?
     
