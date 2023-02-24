@@ -78,8 +78,7 @@ public final class Setting<Value>: AnySetting {
     // MARK: - Observation
     
     func observe(options: SettingObservation.Options, changeHandler: @escaping (Value) -> Void) -> SettingObservation {
-        let token = UUID().uuidString
-        let observation = SettingObservation(token: token) { [weak self] token in
+        let observation = SettingObservation { [weak self] token in
             guard let self = self,
                   let index = self.changeHandlers.map(\.token).firstIndex(of: token)
             else {
@@ -89,7 +88,7 @@ public final class Setting<Value>: AnySetting {
             self.changeHandlers.remove(at: index)
         }
         
-        changeHandlers.append((token, changeHandler))
+        changeHandlers.append((observation.token, changeHandler))
         
         if options.contains(.initial) {
             changeHandler(wrappedValue)

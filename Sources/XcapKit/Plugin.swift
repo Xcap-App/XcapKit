@@ -37,7 +37,7 @@ open class Plugin: NSObject, SettingsMonitor {
     // MARK: - Data
     
     open var priority: Priority {
-        .high
+        .overlay
     }
     
     // MARK: - Settings

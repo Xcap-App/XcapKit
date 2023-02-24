@@ -26,20 +26,49 @@ extension SettingObservation {
 
 public class SettingObservation {
     
-    private let token: String
     private let invalidationHandler: (String) -> Void
+    
+    let token: String
     
     deinit {
         invalidationHandler(token)
     }
     
-    init(token: String, invalidationHandler: @escaping (String) -> Void) {
-        self.token = token
+    init(invalidationHandler: @escaping (String) -> Void) {
         self.invalidationHandler = invalidationHandler
+        self.token = UUID().uuidString
     }
     
     public func invalidate() {
         invalidationHandler(token)
+    }
+    
+}
+
+extension SettingObservation: Equatable, Hashable {
+    
+    public static func == (lhs: SettingObservation, rhs: SettingObservation) -> Bool {
+        lhs.token == rhs.token
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(token)
+    }
+    
+}
+
+extension SettingObservation {
+    
+    public func store<C>(in collection: inout C) where C : RangeReplaceableCollection, C.Element == SettingObservation {
+        guard !collection.contains(self) else {
+            return
+        }
+        
+        collection.append(self)
+    }
+    
+    public func store(in set: inout Set<SettingObservation>) {
+        set.update(with: self)
     }
     
 }

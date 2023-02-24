@@ -1,6 +1,18 @@
 import XCTest
 @testable import XcapKit
 
+private class TestObject: SettingsMonitor {
+    
+    let undoManager: UndoManager? = .init()
+    
+    @Setting var value = 0
+    
+    init() {
+        registerSettings()
+    }
+    
+}
+
 class SettingTests: XCTestCase {
     
     func test_undo() {
@@ -31,20 +43,6 @@ class SettingTests: XCTestCase {
     }
     
     func test_observation() {
-        class TestObject: SettingsMonitor {
-            
-            let undoManager: UndoManager? = .init()
-            
-            @Setting var value = 0
-            
-            init() {
-                registerSettings {
-                    
-                }
-            }
-            
-        }
-        
         let expectation = XCTestExpectation()
         let expectedValues = [0, 3, 0, 3]
         var values: [Int] = []
@@ -65,6 +63,25 @@ class SettingTests: XCTestCase {
         wait(for: [expectation], timeout: 0)
         
         _ = observation
+    }
+    
+    func test_store() {
+        var observationSet: Set<SettingObservation> = []
+        var observationArray: [SettingObservation] = []
+        let object = TestObject()
+        
+        object.observeSetting(\.$value) { _ in
+            
+        }
+        .store(in: &observationSet)
+        
+        object.observeSetting(\.$value) { _ in
+            
+        }
+        .store(in: &observationArray)
+        
+        XCTAssertEqual(observationSet.count, 1)
+        XCTAssertEqual(observationArray.count, 1)
     }
     
 }
