@@ -6,9 +6,13 @@
 //
 
 import Foundation
-import SwiftUI
 
-public class Variable<Value> {
+protocol AnyVariable: AnyObject {
+    var valueChangeHandler: (() -> Void)? { get set }
+    var undoManagerHandler: (() -> UndoManager?)? { get set }
+}
+
+public class Variable<Value>: AnyVariable {
     
     private var changeHandlers: [(token: String, changeHandelr: (Value) -> Void)] = []
     
@@ -67,7 +71,7 @@ public class Variable<Value> {
     
     // MARK: - Observation
     
-    func observe(options: SettingObservation.Options, changeHandler: @escaping (Value) -> Void) -> SettingObservation {
+    public func observe(options: SettingObservation.Options, changeHandler: @escaping (Value) -> Void) -> SettingObservation {
         let observation = SettingObservation { [weak self] token in
             guard let self = self,
                   let index = self.changeHandlers.map(\.token).firstIndex(of: token)

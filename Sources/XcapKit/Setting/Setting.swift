@@ -7,19 +7,18 @@
 
 import Foundation
 
-protocol AnySetting {
-    var valueChangeHandler: (() -> Void)? { get set }
-    var undoManagerHandler: (() -> UndoManager?)? { get set }
+protocol AnySetting: AnyObject {
+    associatedtype Variable: AnyVariable
+    
+    var variable: Variable { get }
 }
 
 @propertyWrapper
 public class Setting<Value>: AnySetting {
     
-    private let variable: Variable<Value>
+    let variable: Variable<Value>
     
-    var undoManagerHandler: (() -> UndoManager?)?
-    
-    var valueChangeHandler: (() -> Void)?
+    // MARK: - Public
     
     public var wrappedValue: Value {
         get { variable.value }
@@ -30,16 +29,10 @@ public class Setting<Value>: AnySetting {
         variable
     }
     
+    // MARK: - Life Cycle
+    
     public init(wrappedValue: Value, undoMode: UndoMode = .enable(name: nil)) {
         self.variable = .init(value: wrappedValue, undoMode: undoMode)
-        
-        self.variable.valueChangeHandler = { [weak self] in
-            self?.valueChangeHandler?()
-        }
-        
-        self.variable.undoManagerHandler = { [weak self] in
-            self?.undoManagerHandler?()
-        }
     }
     
 }

@@ -1,5 +1,4 @@
 import XCTest
-
 @testable import XcapKit
 
 class LineTests: XCTestCase {
@@ -45,15 +44,6 @@ class LineTests: XCTestCase {
         XCTAssertTrue(line.contains(.init(x: 5, y: 5)))
     }
     
-    func test_intersectionType() {
-        let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
-        let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
-        let line3 = Line(start: .init(x: 10, y: 0), end: CGPoint(x: 0, y: 10))
-        
-        XCTAssertEqual(line.intersectionPoint(line2), nil)
-        XCTAssertEqual(line.intersectionPoint(line3), .init(x: 5, y: 5))
-    }
-    
     func test_collides() {
         let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
         let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
@@ -63,7 +53,16 @@ class LineTests: XCTestCase {
         XCTAssertTrue(line.collides(with: line3))
     }
     
-    func test_projection() {
+    func test_intersection_points() {
+        let line = Line(start: .zero, end: CGPoint(x: 10, y: 10))
+        let line2 = Line(start: .init(x: 0, y: 1), end: CGPoint(x: 10, y: 11))
+        let line3 = Line(start: .init(x: 10, y: 0), end: CGPoint(x: 0, y: 10))
+        
+        XCTAssertEqual(line.intersectionPoint(line2), nil)
+        XCTAssertEqual(line.intersectionPoint(line3), .init(x: 5, y: 5))
+    }
+    
+    func test_projection_points() {
         func erase(_ point: CGPoint?) -> CGPoint? {
             guard let point = point else {
                 return nil

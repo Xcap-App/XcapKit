@@ -30,6 +30,7 @@ public struct Circle: Equatable, Hashable, Codable {
     public func contains(_ point: CGPoint) -> Bool {
         let dx = point.x - center.x
         let dy = point.y - center.y
+        
         return dx * dx + dy * dy <= radius * radius
     }
     
