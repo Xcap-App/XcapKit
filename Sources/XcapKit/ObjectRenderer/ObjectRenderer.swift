@@ -106,10 +106,10 @@ extension ObjectRenderer {
             self.rawValue = rawValue
         }
         
-        public static let beforeFinishable  = DrawingStrategy(rawValue: 1 << 0)
-        public static let whenFinishable    = DrawingStrategy(rawValue: 1 << 1)
-        public static let whenFinished      = DrawingStrategy(rawValue: 1 << 2)
-        public static let always            = DrawingStrategy([.whenFinished, .whenFinishable, .beforeFinishable])
+        public static let beforeFinishable = DrawingStrategy(rawValue: 1 << 0)
+        public static let finishable       = DrawingStrategy(rawValue: 1 << 1)
+        public static let finished         = DrawingStrategy(rawValue: 1 << 2)
+        public static let always           = DrawingStrategy([.finished, .finishable, .beforeFinishable])
         
     }
     
@@ -160,11 +160,11 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     }
     
     open var preliminaryGraphicsDrawingStrategy: DrawingStrategy {
-        [.beforeFinishable, .whenFinishable]
+        [.beforeFinishable, .finishable]
     }
     
     open var mainGraphicsDrawingStrategy: DrawingStrategy {
-        [.whenFinishable, .whenFinished]
+        [.finishable, .finished]
     }
     
     open var itemBindings: [ObjectLayout.Position: [ItemBinding]] {
@@ -287,8 +287,10 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         
         if let rotationCenter = rotationCenter, rotation != 0 {
             let center = point(with: rotationCenter)
-            let line = Line(start: currentPoint.rotated(origin: center, angle: -rotation),
-                            end: item.rotated(origin: center, angle: -rotation))
+            let line = Line(
+                start: currentPoint.rotated(origin: center, angle: -rotation),
+                end: item.rotated(origin: center, angle: -rotation)
+            )
             
             for binding in bindings {
                 let position = binding.position
@@ -298,6 +300,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
                     .rotated(origin: center, angle: -rotation)
                     .applying(.init(translationX: dx, y: dy))
                     .rotated(origin: center, angle: rotation)
+                
                 newLayout.update(point, at: position)
             }
         } else {
@@ -309,6 +312,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
                 let dy = line.dy * binding.offset.y
                 let point = newLayout.item(at: position)
                     .applying(.init(translationX: dx, y: dy))
+                
                 newLayout.update(point, at: position)
             }
         }
@@ -467,11 +471,11 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
             return true
         }
         guard !isFinished else {
-            return strategy.contains(.whenFinished)
+            return strategy.contains(.finished)
         }
         
         return layoutAction.isFinishable
-            ? strategy.contains(.whenFinishable)
+            ? strategy.contains(.finishable)
             : strategy.contains(.beforeFinishable)
     }
     

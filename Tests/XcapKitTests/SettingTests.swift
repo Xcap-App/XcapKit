@@ -1,5 +1,5 @@
 import XCTest
-import XcapKit
+@testable import XcapKit
 
 private class TestObject: SettingMonitor {
     
@@ -17,7 +17,7 @@ private class TestObject: SettingMonitor {
 
 class SettingTests: XCTestCase {
     
-    func test_observation() {
+    func test_observe_setting() {
         let expectation = XCTestExpectation()
         let expectedValues = [0, 3, 0, 3]
         var values: [Int] = []
@@ -30,11 +30,16 @@ class SettingTests: XCTestCase {
                 expectation.fulfill()
             }
         }
+        let undoActionName = "Undo Value"
         
+        object.$value.undoMode = .enable(name: undoActionName)
         object.value = 3
+        
+        XCTAssertEqual(object.undoManager?.undoActionName, undoActionName)
+        
         object.undoManager?.undo()
         object.undoManager?.redo()
-        print(values)
+        
         wait(for: [expectation], timeout: 0)
         
         _ = observation

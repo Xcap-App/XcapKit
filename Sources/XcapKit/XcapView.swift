@@ -224,6 +224,8 @@ open class XcapView: PlatformView, SettingMonitor {
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+        
+        undoManager?.removeAllActions(withTarget: self)
     }
     
     public required init?(coder: NSCoder) {
@@ -254,9 +256,11 @@ open class XcapView: PlatformView, SettingMonitor {
             removeTrackingArea(trackingArea)
         }
         
-        let trackingArea = NSTrackingArea(rect: bounds,
-                                          options: [.activeInKeyWindow, .mouseMoved],
-                                          owner: self)
+        let trackingArea = NSTrackingArea(
+            rect: bounds,
+            options: [.activeInKeyWindow, .mouseMoved],
+            owner: self
+        )
         
         addTrackingArea(trackingArea)
         
@@ -306,15 +310,19 @@ open class XcapView: PlatformView, SettingMonitor {
         #if os(macOS)
         let center = NotificationCenter.default
         
-        center.addObserver(self,
-                           selector: #selector(self.frameDidChange(_:)),
-                           name: NSView.frameDidChangeNotification,
-                           object: self)
+        center.addObserver(
+            self,
+            selector: #selector(self.frameDidChange(_:)),
+            name: NSView.frameDidChangeNotification,
+            object: self
+        )
         
-        center.addObserver(self,
-                           selector: #selector(self.windowDidResignKey(_:)),
-                           name: NSWindow.didResignKeyNotification,
-                           object: nil)
+        center.addObserver(
+            self,
+            selector: #selector(self.windowDidResignKey(_:)),
+            name: NSWindow.didResignKeyNotification,
+            object: nil
+        )
         #endif
     }
     
@@ -1556,8 +1564,10 @@ extension XcapView {
         
         registerUndoAction(name: name) { xcapView in
             let scaleFactor = xcapView.calcScaleFactor(from: contentSize, to: xcapView.contentSize)
-            let offset = CGPoint(x: -offset.x * scaleFactor.x,
-                                 y: -offset.y * scaleFactor.y)
+            let offset = CGPoint(
+                x: -offset.x * scaleFactor.x,
+                y: -offset.y * scaleFactor.y
+            )
             
             objects.forEach { object in
                 object.translate(x: offset.x, y: offset.y)
@@ -1578,8 +1588,10 @@ extension XcapView {
         
         registerUndoAction(name: name) { xcapView in
             let scaleFactor = xcapView.calcScaleFactor(from: contentSize, to: xcapView.contentSize)
-            let offset = CGPoint(x: -offset.x * scaleFactor.x,
-                                 y: -offset.y * scaleFactor.y)
+            let offset = CGPoint(
+                x: -offset.x * scaleFactor.x,
+                y: -offset.y * scaleFactor.y
+            )
             let transform = CGAffineTransform.identity
                 .translatedBy(x: offset.x, y: offset.y)
             let point = object.layout.item(at: position)
