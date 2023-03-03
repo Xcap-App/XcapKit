@@ -16,9 +16,9 @@ import AVFoundation.AVUtilities
 public protocol XcapViewDelegate: AnyObject {
     // ----- Drawing Session -----
     func xcapView(_ xcapView: XcapView, didStartDrawingSessionWithObject object: ObjectRenderer)
+    func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool
     func xcapView(_ xcapView: XcapView, didFinishDrawingSessionWithObject object: ObjectRenderer)
     func xcapViewDidCancelDrawingSession(_ xcapView: XcapView)
-    func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool
     // ----- Selection -----
     func xcapView(_ xcapView: XcapView, shouldSelectObject object: ObjectRenderer) -> Bool
     func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer])
@@ -36,9 +36,9 @@ public protocol XcapViewDelegate: AnyObject {
 extension XcapViewDelegate {
     // ----- Drawing Session -----
     public func xcapView(_ xcapView: XcapView, didStartDrawingSessionWithObject object: ObjectRenderer) {}
+    public func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool { false }
     public func xcapView(_ xcapView: XcapView, didFinishDrawingSessionWithObject object: ObjectRenderer) {}
     public func xcapViewDidCancelDrawingSession(_ xcapView: XcapView) {}
-    public func xcapView(_ xcapView: XcapView, shouldDiscardObject object: ObjectRenderer) -> Bool { false }
     // ----- Selection -----
     public func xcapView(_ xcapView: XcapView, shouldSelectObject object: ObjectRenderer) -> Bool { true }
     public func xcapView(_ xcapView: XcapView, didSelectObjects objects: [ObjectRenderer]) {}
@@ -682,7 +682,7 @@ open class XcapView: PlatformView, SettingMonitor {
         
         objects = newObjects
         
-        registerUndoRemoveObjects(objectsToRemove, contextSize: contentSize)
+        registerUndoRemoveObjects(objectsToRemove, contentSize: contentSize)
     }
     
     open func removeObjects(_ objectToRemove: [ObjectRenderer]) {
@@ -1537,7 +1537,7 @@ extension XcapView {
         }
     }
     
-    private func registerUndoRemoveObjects(_ objects: [ObjectRenderer], contextSize: CGSize) {
+    private func registerUndoRemoveObjects(_ objects: [ObjectRenderer], contentSize: CGSize) {
         guard !objects.isEmpty else {
             return
         }
@@ -1545,7 +1545,7 @@ extension XcapView {
         let name = implicitUndoActionNames[.removeObjects]
         
         registerUndoAction(name: name) { xcapView in
-            let scaleFactor = xcapView.calcScaleFactor(from: contextSize, to: xcapView.contentSize)
+            let scaleFactor = xcapView.calcScaleFactor(from: contentSize, to: xcapView.contentSize)
             
             for object in objects {
                 object.scale(x: scaleFactor.x, y: scaleFactor.y)

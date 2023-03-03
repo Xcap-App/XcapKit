@@ -13,43 +13,6 @@ import UIKit
 
 extension ObjectRenderer {
     
-    // ----- Private -----
-    
-    private struct Color: Codable {
-        
-        var red: CGFloat
-        var green: CGFloat
-        var blue: CGFloat
-        var alpha: CGFloat
-        
-        #if os(macOS)
-        init?(color: PlatformColor) {
-            guard let ciColor = CIColor(color: color) else {
-                return nil
-            }
-            
-            red = ciColor.red
-            green = ciColor.green
-            blue = ciColor.blue
-            alpha = ciColor.alpha
-        }
-        #else
-        init(color: PlatformColor) {
-            let ciColor = CIColor(color: color)
-            
-            red = ciColor.red
-            green = ciColor.green
-            blue = ciColor.blue
-            alpha = ciColor.alpha
-        }
-        #endif
-        
-        var platformColor: PlatformColor {
-            .init(red: red, green: green, blue: blue, alpha: alpha)
-        }
-        
-    }
-    
     // ----- Public -----
     
     public enum LayoutAction: Equatable {
@@ -59,19 +22,6 @@ extension ObjectRenderer {
         case continuousPush(finishable: Bool)
         case continuousPushThenFinish
         case finish
-        
-        public var isFinishable: Bool {
-            switch self {
-            case .push(let finishable):
-                fallthrough
-            case .pushSection(let finishable):
-                fallthrough
-            case .continuousPush(let finishable):
-                return finishable
-            case .continuousPushThenFinish, .finish:
-                return true
-            }
-        }
         
         public static func singleSection(items: Int, for layout: ObjectLayout) -> LayoutAction {
             assert(items > 0, "⚠️ `items` must greater than 0.")
@@ -126,8 +76,8 @@ extension ObjectRenderer {
     }
     
     public enum PointDescriptor: Equatable, Hashable, Codable {
+        case absolute(CGPoint)
         case item(ObjectLayout.Position)
-        case fixed(CGPoint)
     }
     
 }
@@ -214,6 +164,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         }
     }
     
+    /// The default implementation does nothing.
     open func layoutDidUpdate() {
         
     }
@@ -222,8 +173,11 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     
     open func point(with pointDescriptor: PointDescriptor) -> CGPoint {
         switch pointDescriptor {
-        case .item(let position):   return layout.item(at: position)
-        case .fixed(let point):     return point
+        case .item(let position):
+            return layout.item(at: position)
+            
+        case .absolute(let point):
+            return point
         }
     }
     
@@ -237,6 +191,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         switch layoutAction {
         case .push, .continuousPush, .continuousPushThenFinish:
             return true
+            
         case .pushSection, .finish:
             return false
         }
@@ -246,6 +201,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         guard canPush() else {
             return
         }
+        
         layout.push(item)
     }
     
@@ -268,13 +224,14 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         guard canPushSection() else {
             return
         }
+        
         layout.pushSection(item)
     }
     
     // MARK: - Modify
     
     open func update(_ item: CGPoint, at position: ObjectLayout.Position) {
-        guard isFinished || layoutAction.isFinishable, let bindings = itemBindings[position] else {
+        guard isFinished || canFinish(), let bindings = itemBindings[position] else {
             layout.update(item, at: position)
             return
         }
@@ -321,16 +278,16 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     }
     
     @discardableResult
-    open func updateLast(_ item: CGPoint) -> Bool {
+    open func updateLast(_ point: CGPoint) -> Bool {
         guard !layout.isEmpty else {
             return false
         }
         
-        let nSection = layout.count - 1
-        let nItem = layout[nSection].endIndex - 1
-        let position = ObjectLayout.Position(item: nItem, section: nSection)
+        let section = layout.count - 1
+        let item = layout[section].endIndex - 1
+        let position = ObjectLayout.Position(item: item, section: section)
         
-        update(item, at: position)
+        update(point, at: position)
         
         return true
     }
@@ -339,7 +296,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     
     @discardableResult
     open func setRotationCenter(_ center: PointDescriptor?) -> Bool {
-        guard isFinished || layoutAction.isFinishable else {
+        guard isFinished || canFinish() else {
             return false
         }
         
@@ -352,22 +309,20 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     
     @discardableResult
     open func rotate(angle: Angle) -> Bool {
-        guard isFinished || layoutAction.isFinishable else {
-            return false
-        }
-        guard let centerDescriptor = rotationCenter else {
+        guard let rotationCenter = rotationCenter else {
             return false
         }
         
-        let center = point(with: centerDescriptor)
-        let dRotation = angle.radians - rotationAngle.radians
+        let center = point(with: rotationCenter)
+        let delta = angle.radians - rotationAngle.radians
         var newLayout = layout
         
         for (section, points) in layout.enumerated() {
             for (item, point) in points.enumerated() {
                 let position = ObjectLayout.Position(item: item, section: section)
                 let point = point
-                    .rotated(origin: center, angle: dRotation)
+                    .rotated(origin: center, angle: delta)
+                
                 newLayout.update(point, at: position)
             }
         }
@@ -382,47 +337,51 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     
     @discardableResult
     open func translate(x: CGFloat, y: CGFloat) -> Bool {
-        guard isFinished || layoutAction.isFinishable else {
+        guard isFinished || canFinish() else {
             return false
         }
         
-        var translatedLayout = layout
+        var newLayout = layout
         
-        for (section, points) in translatedLayout.enumerated() {
+        for (section, points) in newLayout.enumerated() {
             for (item, point) in points.enumerated() {
                 let newPoint = CGPoint(x: point.x + x, y: point.y + y)
                 let position = ObjectLayout.Position(item: item, section: section)
-                translatedLayout.update(newPoint, at: position)
+                
+                newLayout.update(newPoint, at: position)
             }
         }
         
-        layout = translatedLayout
+        layout = newLayout
         
         return true
     }
     
     @discardableResult
     open func scale(x sx: CGFloat, y sy: CGFloat) -> Bool {
-        guard isFinished || layoutAction.isFinishable else {
+        guard isFinished || canFinish() else {
             return false
         }
         
-        var scaledLayout = layout
+        var newLayout = layout
         
         for (section, points) in layout.enumerated() {
             for (item, point) in points.enumerated() {
-                let point = point.applying(.init(scaleX: sx, y: sy))
-                scaledLayout.update(point, at: .init(item: item, section: section))
+                let point = point
+                    .applying(.init(scaleX: sx, y: sy))
+                
+                newLayout.update(point, at: .init(item: item, section: section))
             }
         }
         
-        if case let .fixed(center) = rotationCenter {
+        if case let .absolute(center) = rotationCenter {
             let scaledCenter = center
                 .applying(.init(scaleX: sx, y: sy))
-            rotationCenter = .fixed(scaledCenter)
+            
+            rotationCenter = .absolute(scaledCenter)
         }
         
-        layout = scaledLayout
+        layout = newLayout
         
         return true
     }
@@ -433,11 +392,22 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         guard !isFinished else {
             return false
         }
-        return layoutAction.isFinishable
+        
+        switch layoutAction {
+        case .push(let finishable):
+            fallthrough
+        case .pushSection(let finishable):
+            fallthrough
+        case .continuousPush(let finishable):
+            return finishable
+            
+        case .continuousPushThenFinish, .finish:
+            return true
+        }
     }
     
     open func markAsFinished() {
-        guard layoutAction.isFinishable else {
+        guard canFinish() else {
             return
         }
         
@@ -474,7 +444,7 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
             return strategy.contains(.finished)
         }
         
-        return layoutAction.isFinishable
+        return canFinish()
             ? strategy.contains(.finishable)
             : strategy.contains(.beforeFinishable)
     }
@@ -569,8 +539,8 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
         
         layout          = try container.decode(ObjectLayout.self, forKey: .layout)
         lineWidth       = try container.decode(CGFloat.self, forKey: .lineWidth)
-        strokeColor     = try container.decodeIfPresent(Color.self, forKey: .strokeColor)?.platformColor ?? .black
-        fillColor       = try container.decodeIfPresent(Color.self, forKey: .fillColor)?.platformColor ?? .white
+        strokeColor     = try container.decodeIfPresent(ColorDescriptor.self, forKey: .strokeColor)?.platformColor ?? .black
+        fillColor       = try container.decodeIfPresent(ColorDescriptor.self, forKey: .fillColor)?.platformColor ?? .white
         rotationCenter  = try container.decodeIfPresent(PointDescriptor.self, forKey: .rotationCenter)
         rotationAngle   = try container.decode(Angle.self, forKey: .rotationAngle)
         isFinished      = try container.decode(Bool.self, forKey: .isFinished)
@@ -580,12 +550,14 @@ open class ObjectRenderer: NSObject, Codable, Drawable, SettingMonitor {
     }
     
     open func encode(to encoder: Encoder) throws {
+        let strokeColorDesc = ColorDescriptor(color: strokeColor)
+        let fillColorDesc = ColorDescriptor(color: fillColor)
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try container.encode(layout, forKey: .layout)
         try container.encode(lineWidth, forKey: .lineWidth)
-        try container.encodeIfPresent(Color(color: strokeColor), forKey: .strokeColor)
-        try container.encodeIfPresent(Color(color: fillColor), forKey: .fillColor)
+        try container.encodeIfPresent(strokeColorDesc, forKey: .strokeColor)
+        try container.encodeIfPresent(fillColorDesc, forKey: .fillColor)
         try container.encodeIfPresent(rotationCenter, forKey: .rotationCenter)
         try container.encode(rotationAngle, forKey: .rotationAngle)
         try container.encode(isFinished, forKey: .isFinished)
