@@ -8,11 +8,15 @@ class TestRenderer: ObjectRenderer {
     
     override var itemBindings: [ObjectLayout.Position : [ObjectRenderer.ItemBinding]] {
         let target1 = ObjectLayout.Position.zero
-        let binding1 = ObjectRenderer.ItemBinding(position: ObjectLayout.Position(item: 1, section: 0),
-                                                  offset: CGPoint(x: -1, y: -1))
+        let binding1 = ObjectRenderer.ItemBinding(
+            position: ObjectLayout.Position(item: 1, section: 0),
+            offset: CGPoint(x: -1, y: -1)
+        )
         let target2 = ObjectLayout.Position(item: 1, section: 0)
-        let binding2 = ObjectRenderer.ItemBinding(position: ObjectLayout.Position.zero,
-                                                  offset: CGPoint(x: -1, y: -1))
+        let binding2 = ObjectRenderer.ItemBinding(
+            position: ObjectLayout.Position.zero,
+            offset: CGPoint(x: -1, y: -1)
+        )
         return [
             target1: [binding1],
             target2: [binding2]

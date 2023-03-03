@@ -1,7 +1,7 @@
 import XCTest
 @testable import XcapKit
 
-final class ObjectLayoutTests: XCTestCase {
+final class LayoutTests: XCTestCase {
     
     func test_layout() {
         var layout = ObjectLayout()
