@@ -450,10 +450,10 @@ open class XcapView: PlatformView, SettingMonitor {
     
     // MARK: - Plugin Utils
     
-    private func findPlugin(for priority: Plugin.Priority, at location: CGPoint) -> Plugin? {
+    private func findPlugin(for priority: Plugin.PluginType, at location: CGPoint) -> Plugin? {
         plugins.reversed()
             .first { plugin in
-                guard plugin.priority == priority, plugin.isEnabled else {
+                guard plugin.pluginType == priority, plugin.isEnabled else {
                     return false
                 }
                 return plugin.shouldBegin(in: self, location: location)
@@ -836,10 +836,10 @@ open class XcapView: PlatformView, SettingMonitor {
         
         context.clip(to: contentRect)
         
-        drawPlugins(ofPriorities: [.underlay, .low], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
+        drawPlugins(ofTypes: [.underlay, .interactiveUnderlay], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
         drawBackground(contentRect: contentRect, context: context)
         drawObjects(contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
-        drawPlugins(ofPriorities: [.overlay, .high], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
+        drawPlugins(ofTypes: [.overlay, .interactiveOverlay], contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
         
         if case .selecting(let rect, _) = internalState {
             drawSelectionRect(rect, contentRect: contentRect, contentScaleFactor: scaleFactor, context: context)
@@ -1085,12 +1085,12 @@ open class XcapView: PlatformView, SettingMonitor {
     // MARK: - Draw Plugin
     
     private func drawPlugins(
-        ofPriorities priorities: [Plugin.Priority],
+        ofTypes pluginTypes: [Plugin.PluginType],
         contentRect: CGRect,
         contentScaleFactor: CGPoint,
         context: CGContext
     ) {
-        for plugin in plugins where priorities.contains(plugin.priority) && plugin.isEnabled {
+        for plugin in plugins where pluginTypes.contains(plugin.pluginType) && plugin.isEnabled {
             let state: Plugin.State = {
                 if case let .plugin(aPlugin, state, _, _) = internalState, aPlugin == plugin {
                     return state
@@ -1125,7 +1125,7 @@ extension XcapView {
         
         switch internalState {
         case .idle:
-            if let plugin = findPlugin(for: .high, at: location) {
+            if let plugin = findPlugin(for: .interactiveOverlay, at: location) {
                 beginUpdatingPlugin(plugin, location: location)
             } else if let (object, position) = findEditableObject(at: location) {
                 internalSelectObjects([object])
@@ -1143,7 +1143,7 @@ extension XcapView {
                 internalState = .onObject(object: object, alreadySelected: alreadySelected, initialLocation: location)
                 
                 redraw()
-            } else if let plugin = findPlugin(for: .low, at: location) {
+            } else if let plugin = findPlugin(for: .interactiveUnderlay, at: location) {
                 beginUpdatingPlugin(plugin, location: location)
             } else {
                 beginSelecting(location: location)
