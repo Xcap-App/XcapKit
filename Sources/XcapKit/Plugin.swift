@@ -12,11 +12,11 @@ extension Plugin {
     
     // ----- Public -----
     
-    public enum Priority {
+    public enum PluginType {
         case overlay
         case underlay
-        case high
-        case low
+        case interactiveOverlay
+        case interactiveUnderlay
     }
     
     public enum State {
@@ -36,7 +36,7 @@ open class Plugin: NSObject, SettingMonitor {
     
     // MARK: - Data
     
-    open var priority: Priority {
+    open var pluginType: PluginType {
         .overlay
     }
     
@@ -46,6 +46,10 @@ open class Plugin: NSObject, SettingMonitor {
     
     // MARK: - Life Cycle
     
+    deinit {
+        undoManager?.removeAllActions(withTarget: self)
+    }
+    
     public required override init() {
         super.init()
         
@@ -54,11 +58,11 @@ open class Plugin: NSObject, SettingMonitor {
         }
     }
     
-    // MARK: - Observer
-    
-    open func pluginDidInstall(in xcapView: XcapView) {
+    open func pluginWasInstalled(in xcapView: XcapView) {
         
     }
+    
+    // MARK: - Interactive plugin events
     
     open func shouldBegin(in xcapView: XcapView, location: CGPoint) -> Bool {
         false
