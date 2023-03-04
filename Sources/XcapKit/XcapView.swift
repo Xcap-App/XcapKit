@@ -476,7 +476,7 @@ open class XcapView: PlatformView, SettingMonitor {
         }
         plugin.undoManager = undoManager
         
-        plugin.pluginDidInstall(in: self)
+        plugin.pluginWasInstalled(in: self)
         
         redraw()
     }
