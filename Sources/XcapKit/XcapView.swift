@@ -623,14 +623,18 @@ open class XcapView: PlatformView, SettingMonitor {
     
     // MARK: - Add
     
+    private func prepareObject(_ object: ObjectRenderer) {
+        object.redrawHandler = { [weak self] in
+            self?.redraw()
+        }
+        object.undoManager = undoManager
+        object.markAsFinished()
+    }
+    
     /// No Redraw
     private func internalAddObjects(_ newObjects: [ObjectRenderer]) {
         for object in newObjects {
-            object.redrawHandler = { [weak self] in
-                self?.redraw()
-            }
-            object.undoManager = undoManager
-            object.markAsFinished()
+            prepareObject(object)
         }
         
         objects.append(contentsOf: newObjects)
@@ -661,6 +665,8 @@ open class XcapView: PlatformView, SettingMonitor {
         var newObjects = objects
         var removedSelection: [ObjectRenderer] = []
         
+        registerUndoRemoveObjects(objectsToRemove, originalObjects: objects, contentSize: contentSize)
+        
         for object in objectsToRemove {
             guard let index = newObjects.firstIndex(of: object) else {
                 continue
@@ -681,8 +687,6 @@ open class XcapView: PlatformView, SettingMonitor {
         }
         
         objects = newObjects
-        
-        registerUndoRemoveObjects(objectsToRemove, contentSize: contentSize)
     }
     
     open func removeObjects(_ objectToRemove: [ObjectRenderer]) {
@@ -1537,8 +1541,8 @@ extension XcapView {
         }
     }
     
-    private func registerUndoRemoveObjects(_ objects: [ObjectRenderer], contentSize: CGSize) {
-        guard !objects.isEmpty else {
+    private func registerUndoRemoveObjects(_ removedObjects: [ObjectRenderer], originalObjects: [ObjectRenderer], contentSize: CGSize) {
+        guard !removedObjects.isEmpty else {
             return
         }
         
@@ -1547,11 +1551,19 @@ extension XcapView {
         registerUndoAction(name: name) { xcapView in
             let scaleFactor = xcapView.calcScaleFactor(from: contentSize, to: xcapView.contentSize)
             
-            for object in objects {
-                object.scale(x: scaleFactor.x, y: scaleFactor.y)
+            for object in removedObjects {
+                if scaleFactor.x != 1 || scaleFactor.y != 1 {
+                    object.scale(x: scaleFactor.x, y: scaleFactor.y)
+                }
+                
+                xcapView.prepareObject(object)
             }
             
-            xcapView.addObjects(objects)
+            xcapView.objects = originalObjects
+            
+            xcapView.registerUndoAddObjects(removedObjects)
+            
+            xcapView.redraw()
         }
     }
     
