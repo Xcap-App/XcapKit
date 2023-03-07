@@ -53,6 +53,11 @@ extension XcapViewDelegate {
     #endif
 }
 
+public protocol XcapViewDrawingDelegate: XcapViewDelegate {
+    func xcapView(_ xcapView: XcapView, drawOutlineForObject object: ObjectRenderer)
+    func xcapView(_ xcapView: XcapView, drawOutlineForEditableObject object: Editable)
+}
+
 extension XcapView {
     
     // ----- Private -----
@@ -71,10 +76,10 @@ extension XcapView {
         case plugin(plugin: Plugin, state: Plugin.State, lastLocation: CGPoint, initialLocation: CGPoint)
     }
     
-    private enum ObjectDecoration {
+    private enum ObjectOutlineMode {
         case none
-        case withItems(Editable, highlightedPosition: ObjectLayout.Position?)
-        case withBoundingBox(ObjectRenderer, highlighted: Bool)
+        case items(Editable, highlightedPosition: ObjectLayout.Position?)
+        case boundingBox(ObjectRenderer, highlighted: Bool)
     }
     
     // ----- Public -----
@@ -898,7 +903,7 @@ open class XcapView: PlatformView, SettingMonitor {
     
     // MARK: Draw Object
     
-    private func decoration(for object: ObjectRenderer, isSelected: Bool) -> ObjectDecoration {
+    private func outlineMode(for object: ObjectRenderer, isSelected: Bool) -> ObjectOutlineMode {
         guard isSelected else {
             return .none
         }
@@ -909,10 +914,10 @@ open class XcapView: PlatformView, SettingMonitor {
                 return .none
                 
             case let .onItem(anObject, position, _):
-                return .withItems(object, highlightedPosition: anObject == object ? position : nil)
+                return .items(object, highlightedPosition: anObject == object ? position : nil)
                 
             default:
-                return .withItems(object, highlightedPosition: nil)
+                return .items(object, highlightedPosition: nil)
             }
         } else {
             switch internalState {
@@ -920,10 +925,10 @@ open class XcapView: PlatformView, SettingMonitor {
                 return .none
                 
             case let .onObject(anObject, _, _):
-                return .withBoundingBox(object, highlighted: anObject == object)
+                return .boundingBox(object, highlighted: anObject == object)
                 
             default:
-                return .withBoundingBox(object, highlighted: false)
+                return .boundingBox(object, highlighted: false)
             }
         }
     }
@@ -979,36 +984,50 @@ open class XcapView: PlatformView, SettingMonitor {
             context.restoreGState()
         }
         
-        let decoration = decoration(for: object, isSelected: isSelected)
-        
-        switch decoration {
-        case .none:
+        if let drawingDelegate = delegate as? XcapViewDrawingDelegate, isSelected {
             drawObject()
             
-        case let .withItems(object, position):
-            drawObject()
-            drawObjectItems(
-                for: object,
-                highlightedPosition: position,
-                contentRect: contentRect,
-                scaleFactor: contentScaleFactor,
-                context: context
-            )
+            context.saveGState()
             
-        case let .withBoundingBox(object, highlighted):
-            drawObjectBoundingBox(
-                object: object,
-                highlighted: highlighted,
-                contentRect: contentRect,
-                contentScaleFactor: contentScaleFactor,
-                context: context
-            )
-            drawObject()
+            if let editable = object as? Editable {
+                drawingDelegate.xcapView(self, drawOutlineForEditableObject: editable)
+            } else {
+                drawingDelegate.xcapView(self, drawOutlineForObject: object)
+            }
+            
+            context.restoreGState()
+        } else {
+            let outlineMode = outlineMode(for: object, isSelected: isSelected)
+            
+            switch outlineMode {
+            case .none:
+                drawObject()
+                
+            case let .items(object, position):
+                drawObject()
+                drawObjectItems(
+                    object: object,
+                    highlightedPosition: position,
+                    contentRect: contentRect,
+                    scaleFactor: contentScaleFactor,
+                    context: context
+                )
+                
+            case let .boundingBox(object, highlighted):
+                drawObjectBoundingBox(
+                    object: object,
+                    highlighted: highlighted,
+                    contentRect: contentRect,
+                    contentScaleFactor: contentScaleFactor,
+                    context: context
+                )
+                drawObject()
+            }
         }
     }
     
     private func drawObjectItems(
-        for object: Editable,
+        object: Editable,
         highlightedPosition: ObjectLayout.Position?,
         contentRect: CGRect,
         scaleFactor: CGPoint,
